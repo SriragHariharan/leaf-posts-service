@@ -1,5 +1,6 @@
 import logger from "../../helpers/logger";
 import amqp from "amqplib";
+import prisma from "../../helpers/prisma";
 
 console.log("[console log] RabbitMQ server is listening...");
 
@@ -12,7 +13,7 @@ const MAX_RETRIES = 5;
 async function getUserEvents() {
     try {
         logger.info("[RabbitMQ] Initializing connection to RabbitMQ...");
-        
+
         // Establish a TCP connection
         const connection = await amqp.connect(process.env.RABBITMQ_CONNECTION_STRING!);
         logger.info("[RabbitMQ] Connection established successfully.");
@@ -40,8 +41,8 @@ async function getUserEvents() {
         // Create the main queue with DLX configuration
         await channel.assertQueue(QUEUE, {
             durable: true,
-            deadLetterExchange: DLX_EXCHANGE, 
-            deadLetterRoutingKey: DLX_QUEUE, 
+            deadLetterExchange: DLX_EXCHANGE,
+            deadLetterRoutingKey: DLX_QUEUE,
         });
         logger.info(`[RabbitMQ] Queue '${QUEUE}' asserted with DLX '${DLX_EXCHANGE}'.`);
 
@@ -110,9 +111,108 @@ async function getUserEvents() {
 
 /* Handle the processing of received data here */
 async function processUserData(userData: any): Promise<boolean> {
-    logger.info(`[RabbitMQ] Processing user data for userID: ${userData?.id}`);
-    console.log(userData, " : User data");
-    return true;
+    try {
+        console.log(userData?.userID, " ::: user");
+        logger.info(`[RabbitMQ] Processing user data for userID: ${userData?.id}`);
+
+        if (!userData?.userID) {
+            logger.error(`[RabbitMQ] Invalid user data: Missing userID`);
+            return false;
+        }
+
+        let success = false;
+
+        if (userData.type === "user") {
+            success = await createUser(userData);
+        } else if (userData.type === "username") {
+            success = await updateUsername(userData?.userID, userData?.username);
+        } else if (userData.type === "picture") {
+            success = await updateProfilePicture(userData?.userID, userData?.profilePicture);
+        } else {
+            logger.warn(`[RabbitMQ] Unknown user event type: ${userData.type}`);
+            return false;
+        }
+
+        if (success) {
+            logger.info(`[RabbitMQ] Successfully processed user event for userID: ${userData?.userID}`);
+            return true;
+        } else {
+            logger.warn(`[RabbitMQ] Failed to process user event for userID: ${userData?.userID}`);
+            return false;
+        }
+    } catch (error) {
+        logger.error(`[RabbitMQ] Error processing user event for userID: ${userData?.userID}`, { error });
+        return false;
+    }
+}
+
+/* Create a new user in the database */
+async function createUser(user: any): Promise<boolean> {
+    try {
+        console.log(user, " ::: user");
+        if (!user?.userID || !user?.username) {
+            logger.error(`[Database] Invalid user data: Missing required fields`);
+            return false;
+        }
+
+        await prisma.user.create({
+            data: {
+                userID: user.userID,
+                username: user.username,
+                profilepic: user.profilePicture ?? null,
+            },
+        });
+
+        logger.info(`[Database] Successfully created user with userID: ${user.userID}`);
+        return true;
+    } catch (error) {
+        console.log(error);
+        logger.error(`[Database] Error creating user with userID: ${user?.userID}`, { error });
+        return false;
+    }
+}
+
+/* Update username in the database */
+async function updateUsername(userID: string, newUsername: string): Promise<boolean> {
+    try {
+        if (!userID || !newUsername) {
+            logger.error(`[Database] Invalid input: Missing userID or newUsername`);
+            return false;
+        }
+
+        await prisma.user.update({
+            where: { userID: userID },
+            data: { username: newUsername },
+        });
+
+        logger.info(`[Database] Successfully updated username for userID: ${userID}`);
+        return true;
+    } catch (error) {
+        console.log(error)
+        logger.error(`[Database] Error updating username for userID: ${userID}`, { error });
+        return false;
+    }
+}
+
+/* Update profile picture in the database */
+async function updateProfilePicture(userID: string, newProfilePicture: string): Promise<boolean> {
+    try {
+        if (!userID || !newProfilePicture) {
+            logger.error(`[Database] Invalid input: Missing userID or newProfilePicture`);
+            return false;
+        }
+
+        await prisma.user.update({
+            where: { userID: userID },
+            data: { profilepic: newProfilePicture },
+        });
+
+        logger.info(`[Database] Successfully updated profile picture for userID: ${userID}`);
+        return true;
+    } catch (error) {
+        logger.error(`[Database] Error updating profile picture for userID: ${userID}`, { error });
+        return false;
+    }
 }
 
 getUserEvents();

@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userID     String    @id
+  username   String    @unique
+  profilepic String?
+  posts      Post[]
+  postLikes  PostLike[]
+  postComments PostComment[]
+  postSaves  PostSave[]
+  postReports PostReport[]
+  sentPostcards    Postcard[] @relation("SentPostcards")
+  receivedPostcards Postcard[] @relation("ReceivedPostcards")
+}
+
+model Post {
+  id            String   @id @default(uuid())
+  userID        String
+  imageURL      String   @unique
+  content       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  likesCount    Int      @default(0)
+  commentsCount Int      @default(0)
+  status        Status   @default(active)
+  isReported    Boolean  @default(false)
+  groupID       String?
+  user          User     @relation(fields: [userID], references: [userID])
+  likes        PostLike[]
+  comments     PostComment[]
+  saves        PostSave[]
+  reports      PostReport[]
+}
+
+model PostLike {
+  id        Int      @id @default(autoincrement())
+  postID    String
+  userID    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postID], references: [id])
+  user      User     @relation(fields: [userID], references: [userID])
+}
+
+model PostComment {
+  id        Int      @id @default(autoincrement())
+  postID    String
+  userID    String
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  status    CommentStatus
+  post      Post     @relation(fields: [postID], references: [id])
+  user      User     @relation(fields: [userID], references: [userID])
+}
+
+model PostSave {
+  id        Int      @id @default(autoincrement())
+  postID    String
+  userID    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postID], references: [id])
+  user      User     @relation(fields: [userID], references: [userID])
+}
+
+model PostReport {
+  id          Int        @id @default(autoincrement())
+  postID      String
+  userID      String
+  reason      ReportReason
+  description String
+  createdAt   DateTime @default(now())
+  status      ReportStatus
+  post        Post     @relation(fields: [postID], references: [id])
+  user        User     @relation(fields: [userID], references: [userID])
+}
+
+model Postcard {
+  id         Int      @id @default(autoincrement())
+  senderID   String
+  receiverID String
+  imageURL   String
+  message    String
+  createdAt  DateTime @default(now())
+  viewed     Boolean  @default(false)
+  sender     User     @relation("SentPostcards", fields: [senderID], references: [userID])
+  receiver   User     @relation("ReceivedPostcards", fields: [receiverID], references: [userID])
+}
+
+enum Status {
+  active
+  blocked
+  deleted
+}
+
+enum CommentStatus {
+  active
+  deleted
+}
+
+enum ReportReason {
+  adult_content
+  irrelevant_content
+  spam
+  other
+}
+
+enum ReportStatus {
+  pending
+  reviewed
+  resolved
+}
