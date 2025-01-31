@@ -7,4 +7,5 @@ export interface IPostsRepository {
     savePost(postID: string, userID: string): Promise<{ id: number; userID: string; createdAt: Date; postID: string; }>
     unsavePost(postID: string, userID: string): Promise<boolean>
     getSavedPostsByUser (userID: string): Promise<Promise<{ post: Post }[]>>
+    toggleLike(postID: string, userID: string):Promise<boolean>
 }

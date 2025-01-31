@@ -78,6 +78,20 @@ class PostsService {
             }
         }
     }
+
+    /* like or unlike a post */
+    async toggleLike(postID: string, userID: string): Promise<boolean> {
+        try {
+            const response = await this.postsRepository.toggleLike(postID, userID);
+            return response;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        }
+    }
 };
 
 export default PostsService;

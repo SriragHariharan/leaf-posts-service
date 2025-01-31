@@ -141,6 +141,36 @@ class PostsRepository implements IPostsRepository {
             throw createHttpError(500, "Unable to retrieve saved posts");
         }
     }
+
+    /* like or unlike a post (single route) */
+    async toggleLike(postID: string, userID: string):Promise<boolean> {
+        try {
+            const existingLike = await prisma.postLike.findFirst({
+                where: {
+                    postID,
+                    userID,
+                },
+            });
+            if (existingLike) {
+                await prisma.postLike.delete({
+                    where: { id: existingLike.id },
+                });
+                return false;
+            } 
+            else {
+                await prisma.postLike.create({
+                    data: {
+                        postID,
+                        userID,
+                    },
+                });
+                return true;
+            }
+        } catch (error) {
+            throw createHttpError(500, "Something went wrong");
+        }
+
+    }
 }
 
 export default PostsRepository;

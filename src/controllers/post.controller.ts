@@ -53,6 +53,19 @@ class PostController {
             next(error);
         }
     }
+
+    /* unlike or like on a post(single route for both) */
+    async toggleLike(req: Request, res: Response, next: NextFunction){
+        try {
+            const postID = req.params.postID;
+            const userID = req?.user?.aud;
+            if(!postID) throw createHttpError(400, "No post ID provided");
+            let response = await this.postsService.toggleLike(postID, userID);
+            return res.status(200).json({ success: true, message: response ? "Post liked" : "Post unliked", data: null});
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default PostController;
