@@ -47,3 +47,5 @@ jspm_packages/
 docker-compose.override.yml
 .dockerignore
 
+.npmrc
+

@@ -23,7 +23,7 @@ model User {
 model Post {
   id            String   @id @default(uuid())
   userID        String
-  imageURL      String   @unique
+  imageURL      String?
   content       String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
