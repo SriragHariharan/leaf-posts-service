@@ -33,8 +33,14 @@ postsRouter.get("/save",  validateAccessToken, upload.single("picture"), (req: R
     postsController.getSavedPostsByUser(req, res, next)
 });
 
+/* like or unlike a post(single route) */
 postsRouter.post("/like/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
     postsController.toggleLike(req, res, next);
+})
+
+/* add comment to a post */
+postsRouter.post("/comment/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+    postsController.addComments(req, res, next);
 })
 
 export default postsRouter;

@@ -6,4 +6,6 @@ export interface IPostService {
     unsavePost(postID: string, userID: string): Promise<boolean>
     getSavedPostsOfUser(userID: string): Promise<Promise<{ post: Post }[]>>
     toggleLike(postID: string, userID: string): Promise<boolean>
+    addComments(postID: string, userID: string, comment: string)
+        : Promise<{ id: number; postID: string; userID: string; createdAt: Date; comment: string; updatedAt: Date; }>
 }

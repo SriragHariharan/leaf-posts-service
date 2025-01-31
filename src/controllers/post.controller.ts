@@ -66,6 +66,21 @@ class PostController {
             next(error);
         }
     }
+
+    /* add comments to a post */
+    async addComments(req: Request, res: Response, next: NextFunction){
+        try {
+            const userID = req?.user?.aud;
+            const postID = req.params.postID;
+            const comment = req.body.comment;
+            if(!postID) throw createHttpError(400, "No post ID provided");
+            if(!comment) throw createHttpError(400, "No comment provided");
+            let response = await this.postsService.addComments(postID, userID, comment);
+            return res.status(201).json({ success: true, message: "Comment added", data: { comment: response}});
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default PostController;

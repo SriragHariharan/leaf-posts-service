@@ -171,6 +171,24 @@ class PostsRepository implements IPostsRepository {
         }
 
     }
+
+    /* comment on a post */
+    async addComments(postID: string, userID: string, comment: string)
+        : Promise<{ id: number; postID: string; userID: string; createdAt: Date; comment: string; updatedAt: Date; }> {
+        try {
+            const newComment = await prisma.postComment.create({
+                data: {
+                    postID,
+                    userID,
+                    comment,
+                    status: "active",
+                },
+            });
+            return newComment;
+        } catch (error) {
+            throw createHttpError(500, "Unable to comment on post");
+        }
+    }
 }
 
 export default PostsRepository;

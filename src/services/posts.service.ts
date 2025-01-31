@@ -4,8 +4,9 @@ import compressImage from "../helpers/sharp.helper";
 import { IPostsRepository } from "../interfaces/IPostsRepository";
 import { Post } from "../interfaces/post.interface";
 import { IElasticRepository } from "../interfaces/IElasticRepository";
+import { IPostService } from "../interfaces/IPostService";
 
-class PostsService {
+class PostsService implements IPostService {
 
     private postsRepository: IPostsRepository;
     private esRepository: IElasticRepository;
@@ -84,6 +85,22 @@ class PostsService {
         try {
             const response = await this.postsRepository.toggleLike(postID, userID);
             return response;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        }
+    }
+
+    /* comment on a post */
+    async addComments(postID: string, userID: string, comment: string)
+        : Promise<{ id: number; postID: string; userID: string; createdAt: Date; comment: string; updatedAt: Date; }>
+        {
+        try {
+            const newComment = await this.postsRepository.addComments(postID, userID, comment);
+            return newComment;
         } catch (error) {
             if (createHttpError.isHttpError(error)) {
                 throw error;
