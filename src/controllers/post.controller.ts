@@ -81,6 +81,18 @@ class PostController {
             next(error);
         }
     }
+
+    /* get all comments for a specific post */
+    async getComments(req: Request, res: Response, next: NextFunction){
+        try {
+            const postID = req.params.postID;
+            if(!postID) throw createHttpError(400, "No post ID provided");
+            let comments = await this.postsService.getComments(postID);
+            return res.status(200).json({ success: true, message: null, data: { comments }});
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default PostController;

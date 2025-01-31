@@ -2,6 +2,7 @@ import createHttpError from "http-errors";
 import prisma from "../helpers/prisma";
 import { IPostsRepository } from "../interfaces/IPostsRepository";
 import { Post } from "../interfaces/post.interface";
+import { PostComment } from "../interfaces/comment.interface";
 
 class PostsRepository implements IPostsRepository {
 
@@ -173,8 +174,7 @@ class PostsRepository implements IPostsRepository {
     }
 
     /* comment on a post */
-    async addComments(postID: string, userID: string, comment: string)
-        : Promise<{ id: number; postID: string; userID: string; createdAt: Date; comment: string; updatedAt: Date; }> {
+    async addComments(postID: string, userID: string, comment: string): Promise<PostComment> {
         try {
             const newComment = await prisma.postComment.create({
                 data: {
@@ -189,6 +189,24 @@ class PostsRepository implements IPostsRepository {
             throw createHttpError(500, "Unable to comment on post");
         }
     }
+
+    /* get all comments for a post */
+    async getComments(postID: string): Promise<PostComment[]> {
+            try {
+                const comments = await prisma.postComment.findMany({
+                    where: {
+                        postID,
+                        status: "active",
+                    },
+                    include: {
+                        user: true,
+                    },
+                });
+                return comments;
+            } catch (error) {
+                throw createHttpError(500, "Unable to fetch comments");
+            }
+        }
 }
 
 export default PostsRepository;

@@ -43,4 +43,9 @@ postsRouter.post("/comment/:postID",  validateAccessToken, (req: Request, res: R
     postsController.addComments(req, res, next);
 })
 
+/* get all comments for a post */
+postsRouter.get("/comment/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+    postsController.getComments(req, res, next);
+})
+
 export default postsRouter;

@@ -1,3 +1,4 @@
+import { PostComment } from "./comment.interface";
 import { Post } from "./post.interface";
 
 export interface IPostService {
@@ -6,6 +7,6 @@ export interface IPostService {
     unsavePost(postID: string, userID: string): Promise<boolean>
     getSavedPostsOfUser(userID: string): Promise<Promise<{ post: Post }[]>>
     toggleLike(postID: string, userID: string): Promise<boolean>
-    addComments(postID: string, userID: string, comment: string)
-        : Promise<{ id: number; postID: string; userID: string; createdAt: Date; comment: string; updatedAt: Date; }>
+    addComments(postID: string, userID: string, comment: string): Promise<PostComment>
+    getComments(postID: string): Promise<PostComment[]>
 }

@@ -5,6 +5,7 @@ import { IPostsRepository } from "../interfaces/IPostsRepository";
 import { Post } from "../interfaces/post.interface";
 import { IElasticRepository } from "../interfaces/IElasticRepository";
 import { IPostService } from "../interfaces/IPostService";
+import { PostComment } from "../interfaces/comment.interface";
 
 class PostsService implements IPostService {
 
@@ -95,8 +96,7 @@ class PostsService implements IPostService {
     }
 
     /* comment on a post */
-    async addComments(postID: string, userID: string, comment: string)
-        : Promise<{ id: number; postID: string; userID: string; createdAt: Date; comment: string; updatedAt: Date; }>
+    async addComments(postID: string, userID: string, comment: string): Promise<PostComment>
         {
         try {
             const newComment = await this.postsRepository.addComments(postID, userID, comment);
@@ -108,6 +108,20 @@ class PostsService implements IPostService {
                 throw createHttpError(500, "An unexpected error occurred");
             }
         }
+    }
+
+    async getComments(postID: string): Promise<PostComment[]> {
+        try {
+            const comments = await this.postsRepository.getComments(postID);
+            return comments;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+            
+        } 
     }
 };
 
