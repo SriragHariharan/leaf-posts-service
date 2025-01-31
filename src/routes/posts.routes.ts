@@ -18,4 +18,19 @@ postsRouter.post("/",  validateAccessToken, upload.single("picture"), (req: Requ
     postsController.createPost(req, res, next)
 });
 
+/* save post */
+postsRouter.post("/save/:postID",  validateAccessToken, upload.single("picture"), (req: Request, res: Response, next: NextFunction) => {
+    postsController.savePost(req, res, next)
+});
+
+/* unsave post */
+postsRouter.delete("/save/:postID",  validateAccessToken, upload.single("picture"), (req: Request, res: Response, next: NextFunction) => {
+    postsController.unsavePost(req, res, next)
+});
+
+/* view saved posts */
+postsRouter.get("/save",  validateAccessToken, upload.single("picture"), (req: Request, res: Response, next: NextFunction) => {
+    postsController.getSavedPostsByUser(req, res, next)
+});
+
 export default postsRouter;

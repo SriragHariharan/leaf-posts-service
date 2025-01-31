@@ -32,8 +32,50 @@ class PostsService {
 
             return await this.postsRepository.getPostDetails(newPostID);
         } catch (error) {
-            console.error("Error creating post:", error);
-            throw createHttpError(500, "An unexpected error occurred");
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        }
+    }
+
+    async savePost(postID: string, userID: string): Promise<{ id: number; userID: string; createdAt: Date; postID: string; }> {
+        try {
+            const postSavedResponse = await this.postsRepository.savePost(postID, userID);
+            return postSavedResponse;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        }
+    }
+
+    async unsavePost(postID: string, userID: string): Promise<boolean>{
+        try {
+            const response = await this.postsRepository.unsavePost(postID, userID);
+            return response;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        }
+    }
+
+    async getSavedPostsOfUser(userID: string): Promise<Promise<{ post: Post }[]>>{
+        try {
+            let savedPosts = await this.postsRepository.getSavedPostsByUser(userID);
+            return savedPosts;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
         }
     }
 };

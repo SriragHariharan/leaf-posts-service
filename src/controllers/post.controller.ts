@@ -19,6 +19,40 @@ class PostController {
             next(error);
         }
     }
+
+    async savePost(req: Request, res: Response, next: NextFunction){
+        try {
+            const postID = req.params.postID;
+            const userID = req?.user?.aud;
+            if(!postID) throw createHttpError(400, "No post ID provided");
+            await this.postsService.savePost(postID, userID);
+            return res.status(201).json({ success: true, message: "Post saved", data: null});
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async unsavePost(req: Request, res: Response, next: NextFunction){
+        try {
+            const userID = req?.user?.aud;
+            const postID = req.params.postID;
+            if(!postID) throw createHttpError(400, "No post ID provided");
+            let response = await this.postsService.unsavePost(postID, userID);
+            return res.status(200).json({ success: response, message: "Unsaved post", data: null});
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getSavedPostsByUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userID = req?.user?.aud;
+            const savedPosts = await this.postsService.getSavedPostsOfUser(userID);
+            return res.status(200).json({ success: true, message: null, data: { posts: savedPosts}});
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default PostController;

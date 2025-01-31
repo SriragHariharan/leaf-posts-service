@@ -71,6 +71,76 @@ class PostsRepository implements IPostsRepository {
             throw createHttpError(500, "Unable to fetch post details");
         }
     }
+
+    /* save a post */
+    async savePost(postID: string, userID: string): Promise<{ id: number; userID: string; createdAt: Date; postID: string; }> {
+        try {
+            const existingSave = await prisma.postSave.findFirst({
+                where: {
+                    postID,
+                    userID,
+                },
+            });
+
+            if (existingSave) {
+                throw createHttpError(400, "Post already saved");
+            }
+
+            const savedPost = await prisma.postSave.create({
+                data: {
+                    postID,
+                    userID,
+                },
+            });
+
+            return savedPost;
+        } catch (error) {
+            if (error instanceof createHttpError.HttpError) {
+                throw error;
+            }
+            throw createHttpError(500, "Unable to save post");
+        }
+    }
+
+    /* unsave a post */
+    async unsavePost(postID: string, userID: string): Promise<boolean> {
+        try {
+            const deleteResult = await prisma.postSave.deleteMany({
+                where: {
+                    postID,
+                    userID,
+                },
+            });
+            if (deleteResult.count === 0) {
+                throw createHttpError(404, "Post not found or already unsaved");
+            }
+            return true;
+        } catch (error) {
+            if (error instanceof createHttpError.HttpError) {
+                throw error;
+            }
+            throw createHttpError(500, "Unable to save post");
+        }
+    }
+
+    /* view all saved posts of a specific user. */
+    async getSavedPostsByUser (userID: string): Promise<Promise<{ post: Post }[]>> {
+        try {
+            const savedPosts = await prisma.postSave.findMany({
+                where: {
+                    userID,
+                },
+                include: {
+                    post: true,
+                    user: true
+                },
+            });
+
+            return savedPosts;
+        } catch (error) {
+            throw createHttpError(500, "Unable to retrieve saved posts");
+        }
+    }
 }
 
 export default PostsRepository;
