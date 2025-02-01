@@ -2,7 +2,7 @@ import createHttpError from "http-errors";
 import { uploadToS3 } from "../helpers/s3.helper";
 import compressImage from "../helpers/sharp.helper";
 import { IPostsRepository } from "../interfaces/IPostsRepository";
-import { Post } from "../interfaces/post.interface";
+import { Post, ReportReason } from "../interfaces/post.interface";
 import { IElasticRepository } from "../interfaces/IElasticRepository";
 import { IPostService } from "../interfaces/IPostService";
 import { PostComment } from "../interfaces/comment.interface";
@@ -110,6 +110,7 @@ class PostsService implements IPostService {
         }
     }
 
+    /* get comments of a post */
     async getComments(postID: string): Promise<PostComment[]> {
         try {
             const comments = await this.postsRepository.getComments(postID);
@@ -122,6 +123,20 @@ class PostsService implements IPostService {
             }
             
         } 
+    }
+
+    /* report a post */
+    async reportPost(postID: string, userID: string, reason: ReportReason, description: string): Promise<boolean> {
+        try {
+            const response = await this.postsRepository.reportPost(postID, userID, reason, description);
+            return response;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        }
     }
 };
 

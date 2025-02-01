@@ -48,4 +48,9 @@ postsRouter.get("/comment/:postID",  validateAccessToken, (req: Request, res: Re
     postsController.getComments(req, res, next);
 })
 
+/* report a post */
+postsRouter.post("/report/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+    postsController.reportPost(req, res, next);
+})
+
 export default postsRouter;

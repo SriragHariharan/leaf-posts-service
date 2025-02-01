@@ -1,7 +1,7 @@
 import createHttpError from "http-errors";
 import prisma from "../helpers/prisma";
 import { IPostsRepository } from "../interfaces/IPostsRepository";
-import { Post } from "../interfaces/post.interface";
+import { Post, ReportReason } from "../interfaces/post.interface";
 import { PostComment } from "../interfaces/comment.interface";
 
 class PostsRepository implements IPostsRepository {
@@ -193,20 +193,38 @@ class PostsRepository implements IPostsRepository {
     /* get all comments for a post */
     async getComments(postID: string): Promise<PostComment[]> {
             try {
-                const comments = await prisma.postComment.findMany({
-                    where: {
-                        postID,
-                        status: "active",
-                    },
-                    include: {
-                        user: true,
-                    },
-                });
-                return comments;
-            } catch (error) {
-                throw createHttpError(500, "Unable to fetch comments");
-            }
+            const comments = await prisma.postComment.findMany({
+                where: {
+                    postID,
+                    status: "active",
+                },
+                include: {
+                    user: true,
+                },
+            });
+            return comments;
+        } catch (error) {
+            throw createHttpError(500, "Unable to fetch comments");
         }
+    }
+
+    /* report a post */
+    async reportPost(postID: string, userID: string, reason: ReportReason, description: string): Promise<boolean> {
+        try {
+            await prisma.postReport.create({
+                data: {
+                    postID,
+                    userID,
+                    reason,
+                    description,
+                    status: "pending",
+                },
+            });
+            return true;
+        } catch (error) {
+            throw createHttpError(500, "Unable to report post");
+        }
+    };
 }
 
 export default PostsRepository;

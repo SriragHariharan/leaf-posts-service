@@ -93,6 +93,22 @@ class PostController {
             next(error);
         }
     }
+
+    /* report a post */
+    async reportPost(req: Request, res: Response, next: NextFunction){
+        try {
+            const postID = req.params.postID;
+            const userID = req?.user?.aud;
+            const reason = req.body.reason;
+            const description = req.body.description;
+            if(!postID) throw createHttpError(400, "No post ID provided");
+            if(!reason) throw createHttpError(400, "No reason provided");
+            await this.postsService.reportPost(postID, userID, reason, description);
+            return res.status(201).json({ success: true, message: "Post reported", data: null});
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default PostController;

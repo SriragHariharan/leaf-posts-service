@@ -11,3 +11,5 @@ export interface Post {
     isReported?: boolean;
     groupID?: string | null;
 }
+
+export type ReportReason =   "adult_content" | "irrelevant_content" | "spam" | "other"
