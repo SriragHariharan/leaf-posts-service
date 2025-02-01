@@ -6,6 +6,7 @@ import { Post, ReportReason } from "../interfaces/post.interface";
 import { IElasticRepository } from "../interfaces/IElasticRepository";
 import { IPostService } from "../interfaces/IPostService";
 import { PostComment } from "../interfaces/comment.interface";
+import RedisHelper from "../helpers/redis";
 
 class PostsService implements IPostService {
 
@@ -140,9 +141,21 @@ class PostsService implements IPostService {
     }
 
     /* get likes and comments count(count only) for a specific post */
-    async getInteractionCount(postID: string): Promise<{ likesCount: number; commentsCount: number; } | null> {
+    async getInteractionCount(postID: string): Promise<{ likesCount: number; commentsCount: number } | null> {
         try {
+            const cacheKey = `post:${postID}:interactions`;
+
+            const cachedData = await RedisHelper.get(cacheKey);
+            if (cachedData) {
+                return JSON.parse(cachedData);
+            }
+
             const interactions = await this.postsRepository.getInteractionCount(postID);
+
+            if (interactions) {
+                await RedisHelper.set(cacheKey, JSON.stringify(interactions), 60);
+            }
+
             return interactions;
         } catch (error) {
             if (createHttpError.isHttpError(error)) {
