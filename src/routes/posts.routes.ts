@@ -14,6 +14,7 @@ const esRepository = new ElasticSearchRepository();
 const postsService = new PostsService(postsRepository, esRepository);
 const postsController = new PostController(postsService);
 
+/* create new post */
 postsRouter.post("/",  validateAccessToken, upload.single("picture"), (req: Request, res: Response, next: NextFunction) => {
     postsController.createPost(req, res, next)
 });
@@ -52,5 +53,10 @@ postsRouter.get("/comment/:postID",  validateAccessToken, (req: Request, res: Re
 postsRouter.post("/report/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
     postsController.reportPost(req, res, next);
 })
+
+/* get interaction count */
+postsRouter.get("/interaction/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+    postsController.getInteractionCount(req, res, next);
+});
 
 export default postsRouter;

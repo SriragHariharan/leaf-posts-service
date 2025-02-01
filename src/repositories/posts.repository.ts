@@ -144,51 +144,67 @@ class PostsRepository implements IPostsRepository {
     }
 
     /* like or unlike a post (single route) */
-    async toggleLike(postID: string, userID: string):Promise<boolean> {
+    async toggleLike(postID: string, userID: string): Promise<boolean> {
         try {
-            const existingLike = await prisma.postLike.findFirst({
-                where: {
-                    postID,
-                    userID,
-                },
+            return await prisma.$transaction(async (tx) => {
+                const existingLike = await tx.postLike.findFirst({
+                    where: { postID, userID },
+                });
+
+                if (existingLike) {
+                    await tx.postLike.delete({
+                        where: { id: existingLike.id },
+                    });
+
+                    await tx.post.update({
+                        where: { id: postID },
+                        data: { likesCount: { decrement: 1 } },
+                    });
+
+                    return false;
+                } else {
+                    await tx.postLike.create({
+                        data: { postID, userID },
+                    });
+
+                    await tx.post.update({
+                        where: { id: postID },
+                        data: { likesCount: { increment: 1 } },
+                    });
+
+                    return true;
+                }
             });
-            if (existingLike) {
-                await prisma.postLike.delete({
-                    where: { id: existingLike.id },
-                });
-                return false;
-            } 
-            else {
-                await prisma.postLike.create({
-                    data: {
-                        postID,
-                        userID,
-                    },
-                });
-                return true;
-            }
         } catch (error) {
             throw createHttpError(500, "Something went wrong");
         }
-
     }
 
     /* comment on a post */
     async addComments(postID: string, userID: string, comment: string): Promise<PostComment> {
         try {
-            const newComment = await prisma.postComment.create({
-                data: {
-                    postID,
-                    userID,
-                    comment,
-                    status: "active",
-                },
+            return await prisma.$transaction(async (tx) => {
+                const newComment = await tx.postComment.create({
+                    data: {
+                        postID,
+                        userID,
+                        comment,
+                        status: "active",
+                    },
+                });
+
+                await tx.post.update({
+                    where: { id: postID },
+                    data: { commentsCount: { increment: 1 } },
+                });
+
+                return newComment;
             });
-            return newComment;
         } catch (error) {
             throw createHttpError(500, "Unable to comment on post");
         }
     }
+
 
     /* get all comments for a post */
     async getComments(postID: string): Promise<PostComment[]> {
@@ -225,6 +241,22 @@ class PostsRepository implements IPostsRepository {
             throw createHttpError(500, "Unable to report post");
         }
     };
+
+    async getInteractionCount(postID: string): Promise<{ likesCount: number; commentsCount: number; } | null> {
+        try {
+            const interactions = await prisma.post.findUnique({
+                where: { id: postID },
+                select: {
+                    likesCount: true,
+                    commentsCount: true,
+                },
+            });
+            return interactions;
+        } catch (error) {
+            throw createHttpError(500, "Unable to fetch interaction count");
+            
+        }
+    }
 }
 
 export default PostsRepository;

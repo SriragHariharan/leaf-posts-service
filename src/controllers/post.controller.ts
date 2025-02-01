@@ -109,6 +109,19 @@ class PostController {
             next(error);
         }
     }
+
+    /* get interaction count of a post */
+    async getInteractionCount(req: Request, res: Response, next: NextFunction){
+        try {
+            const postID = req.params.postID;
+            if(!postID) throw createHttpError(400, "No post ID provided");
+            let interactions = await this.postsService.getInteractionCount(postID);
+            return res.status(200).json({ success: true, message: null, data: { ...interactions }});
+        } catch (error) {
+            next(error);
+        }
+    }
+
 }
 
 export default PostController;

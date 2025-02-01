@@ -10,4 +10,5 @@ export interface IPostService {
     addComments(postID: string, userID: string, comment: string): Promise<PostComment>
     getComments(postID: string): Promise<PostComment[]>
     reportPost(postID: string, userID: string, reason: ReportReason, description: string): Promise<boolean>
+    getInteractionCount(postID: string): Promise<{ likesCount: number; commentsCount: number; } | null>
 }

@@ -138,6 +138,20 @@ class PostsService implements IPostService {
             }
         }
     }
+
+    /* get likes and comments count(count only) for a specific post */
+    async getInteractionCount(postID: string): Promise<{ likesCount: number; commentsCount: number; } | null> {
+        try {
+            const interactions = await this.postsRepository.getInteractionCount(postID);
+            return interactions;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        }
+    }
 };
 
 export default PostsService;
