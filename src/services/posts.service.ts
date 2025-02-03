@@ -7,6 +7,7 @@ import { IElasticRepository } from "../interfaces/IElasticRepository";
 import { IPostService } from "../interfaces/IPostService";
 import { PostComment } from "../interfaces/comment.interface";
 import RedisHelper from "../helpers/redis";
+import sendPostEvents from "../messaging/rabbitmq/post-events.producer";
 
 class PostsService implements IPostService {
 
@@ -33,7 +34,12 @@ class PostsService implements IPostService {
                 await this.esRepository.createNewPost(newPostID, userID, content, null, newPost.createdAt!);
             }
 
-            return await this.postsRepository.getPostDetails(newPostID);
+            const postDetails = await this.postsRepository.getPostDetails(newPostID);
+            
+            /* send messages to rabbitMQ => feeds service */
+            sendPostEvents(postDetails?.id!, postDetails?.imageURL!, postDetails?.content!, userID!);
+            
+            return postDetails
         } catch (error) {
             if (createHttpError.isHttpError(error)) {
                 throw error;

@@ -1,6 +1,6 @@
 import logger from "../../helpers/logger";
-import amqp from "amqplib";
 import prisma from "../../helpers/prisma";
+import { getRabbitMQConnection } from "./rabbitmq.config";
 
 console.log("[console log] RabbitMQ server is listening...");
 
@@ -15,7 +15,7 @@ async function getUserEvents() {
         logger.info("[RabbitMQ] Initializing connection to RabbitMQ...");
 
         // Establish a TCP connection
-        const connection = await amqp.connect(process.env.RABBITMQ_CONNECTION_STRING!);
+        const connection = await getRabbitMQConnection();
         logger.info("[RabbitMQ] Connection established successfully.");
 
         // Create a channel (communication line)
