@@ -68,8 +68,10 @@ class PostsRepository implements IPostsRepository {
 
             return post;
         } catch (error) {
-            console.error("Error fetching post details:", error);
-            throw createHttpError(500, "Unable to fetch post details");
+            if (error instanceof createHttpError.HttpError) {
+                throw error;
+            }
+            throw createHttpError(500, "Unable to save post");
         }
     }
 

@@ -171,6 +171,21 @@ class PostsService implements IPostService {
             }
         }
     }
+
+    /* get details of a post,  shared to external user */
+    async getPostDetails(postID: string): Promise<Post>{
+        try {
+            const postDetails = await this.postsRepository.getPostDetails(postID);
+            return postDetails;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        }
+
+    }
 };
 
 export default PostsService;

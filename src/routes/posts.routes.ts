@@ -19,6 +19,11 @@ postsRouter.post("/",  validateAccessToken, upload.single("picture"), (req: Requ
     postsController.createPost(req, res, next)
 });
 
+/* get post details */
+postsRouter.get("/:postID", (req: Request, res: Response, next: NextFunction) => {
+  postsController.getPostDetails(req, res, next)  
+})
+
 /* save post */
 postsRouter.post("/save/:postID",  validateAccessToken, upload.single("picture"), (req: Request, res: Response, next: NextFunction) => {
     postsController.savePost(req, res, next)

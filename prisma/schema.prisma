@@ -24,7 +24,7 @@ model Post {
   id            String   @id @default(uuid())
   userID        String
   imageURL      String?
-  content       String
+  content       String   @db.Text
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   likesCount    Int      @default(0)

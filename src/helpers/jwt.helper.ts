@@ -13,7 +13,6 @@ declare global {
 
 export function validateAccessToken(req: Request, _res: Response, next: NextFunction): void {
     try {
-        console.log(req.headers, "token comming from client");
         const authHeader = req.headers['authorization'];
         if (!authHeader) {
             return next(createHttpError.Unauthorized("Unauthorized request, authorization header is required."));

@@ -122,6 +122,20 @@ class PostController {
         }
     }
 
+    /* get details of a post for external user */
+    async getPostDetails(req: Request, res: Response, next: NextFunction) {
+        try {
+            const postID = req.params.postID;
+            if(!postID){
+                throw createHttpError(404, "Post not found")
+            }
+            const postDetails = await this.postsService.getPostDetails(postID);
+            return res.status(200).json({ success: true, message: null, data: {post: postDetails }})
+        } catch (error) {
+            next(error)
+        }
+    }
+
 }
 
 export default PostController;
