@@ -26,38 +26,53 @@ class ElasticSearchRepository implements IElasticRepository {
 
     /* Search for posts by content */
     async searchPostsContent(query: string): Promise<Post[]> {
-        try {
-            const { body } = await esClient.search({
-                index: 'posts',
-                body: {
-                    query: {
-                        multi_match: {
-                            query: query,
-                            fields: ['content'],
-                        },
+    try {
+        // Search for posts containing the query in the content
+        const result = await esClient.search({
+            index: 'posts',
+            body: {
+                query: {
+                    wildcard: {
+                        content: `*${query}*`, // Use wildcards to match any substring
                     },
-                    sort: [
-                        { _score: { order: 'desc' } },
-                        { createdAt: { order: 'desc' } },
-                    ],
-                    size: 100,
                 },
-            });
+                size: 100, // Return the first 100 results
+            },
+        });
 
-            // Map results to Post interface
-            const results: Post[] = body.hits.hits.map((hit: any) => ({
-                id: hit._id,
-                userID: hit._source.userID,
-                content: hit._source.content,
-                imageURL: hit._source.imageURL,
-                createdAt: new Date(hit._source.createdAt), // Convert ISO string back to Date
-            }));
+        // Extract post IDs and user IDs from the search results
+        const postIDs = result.hits.hits.map((hit: any) => hit._id); // Use _id for the post ID
+        const userIDs = result.hits.hits.map((hit: any) => hit._source.userID); // Extract user IDs
 
-            return results;
-        } catch (error) {
-            throw createHttpError(500, "Unable to search. Please try again.");
-        }
+        // Search for users associated with the posts
+        const userResult = await esClient.search({
+            index: 'users',
+            body: {
+                query: {
+                    terms: {
+                        userID: userIDs, // Match user IDs from the posts
+                    },
+                },
+                size: 100,
+            },
+        });
+
+        // Create a map of users for quick lookup
+        const users: { [key: string]: any } = userResult.hits.hits.reduce((acc: { [key: string]: any }, hit: any) => {
+            acc[hit._source.userID] = hit._source;
+            return acc;
+        }, {});
+
+        // Return the posts with their IDs, content, and associated user details
+        return result.hits.hits.map((hit: any) => ({
+            id: hit._id, // Include the post ID
+            ...hit._source, // Include the post content and other fields
+            user: users[hit._source.userID], // Include the user details
+        }));
+    } catch (error) {
+        throw createHttpError(500, "Unable to search. Please try again.");
     }
+}
 }
 
 export default ElasticSearchRepository;

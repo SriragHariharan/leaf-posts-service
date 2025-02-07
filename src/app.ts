@@ -4,7 +4,7 @@ import createHttpError from 'http-errors';
 import bodyParser from 'body-parser';
 
 //rabbitmq consumer file
-import "./messaging/rabbitmq/consumer"
+import "./messaging/rabbitmq/user-events.consumer"
 import postsRouter from './routes/posts.routes';
 
 const app = express();

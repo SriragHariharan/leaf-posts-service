@@ -184,7 +184,21 @@ class PostsService implements IPostService {
                 throw createHttpError(500, "An unexpected error occurred");
             }
         }
+    }
 
+    /* search for posts content */
+    async searchPosts(query: string): Promise<Post[]> {
+        try {
+            const posts = await this.esRepository.searchPostsContent(query);
+            return posts;
+        } catch (error) {
+            console.log(error)
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        }
     }
 };
 

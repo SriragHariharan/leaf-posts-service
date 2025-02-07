@@ -240,6 +240,7 @@ class PostsRepository implements IPostsRepository {
             });
             return true;
         } catch (error) {
+            console.log(error)
             throw createHttpError(500, "Unable to report post");
         }
     };

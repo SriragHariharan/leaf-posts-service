@@ -12,4 +12,5 @@ export interface IPostService {
     reportPost(postID: string, userID: string, reason: ReportReason, description: string): Promise<boolean>
     getInteractionCount(postID: string): Promise<{ likesCount: number; commentsCount: number; } | null>
     getPostDetails(postID: string): Promise<Post>
+    searchPosts(query: string): Promise<Post[]>
 }

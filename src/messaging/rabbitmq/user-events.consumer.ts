@@ -1,3 +1,4 @@
+import esClient from "../../helpers/elastic-search";
 import logger from "../../helpers/logger";
 import prisma from "../../helpers/prisma";
 import { getRabbitMQConnection } from "./rabbitmq.config";
@@ -146,7 +147,7 @@ async function processUserData(userData: any): Promise<boolean> {
     }
 }
 
-/* Create a new user in the database */
+/* Create a new user in the database and index it in Elasticsearch */
 async function createUser(user: any): Promise<boolean> {
     try {
         console.log(user, " ::: user");
@@ -155,6 +156,18 @@ async function createUser(user: any): Promise<boolean> {
             return false;
         }
 
+        // Index the user in Elasticsearch
+        await esClient.index({
+            index: 'users',
+            id: user?.userID,
+            body: {
+                userID: user?.userID,
+                username: user?.username,
+                profilepic: user?.profilePicture ?? null,
+            },
+        });
+        
+        // Create the user in the PostgreSQL database using Prisma
         await prisma.user.create({
             data: {
                 userID: user.userID,
@@ -172,6 +185,7 @@ async function createUser(user: any): Promise<boolean> {
     }
 }
 
+
 /* Update username in the database */
 async function updateUsername(userID: string, newUsername: string): Promise<boolean> {
     try {
@@ -183,6 +197,16 @@ async function updateUsername(userID: string, newUsername: string): Promise<bool
         await prisma.user.update({
             where: { userID: userID },
             data: { username: newUsername },
+        });
+
+        await esClient.update({
+            index: 'users',
+            id: userID,
+            body: {
+                doc: {
+                    username: newUsername,
+                },
+            },
         });
 
         logger.info(`[Database] Successfully updated username for userID: ${userID}`);
@@ -205,6 +229,16 @@ async function updateProfilePicture(userID: string, newProfilePicture: string): 
         await prisma.user.update({
             where: { userID: userID },
             data: { profilepic: newProfilePicture },
+        });
+
+        await esClient.update({
+            index: 'users',
+            id: userID,
+            body: {
+                doc: {
+                    profilepic: newProfilePicture,
+                },
+            },
         });
 
         logger.info(`[Database] Successfully updated profile picture for userID: ${userID}`);

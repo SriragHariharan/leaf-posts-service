@@ -136,6 +136,22 @@ class PostController {
         }
     }
 
+    /* search for posts content */
+    async searchPosts(req: Request, res: Response, next: NextFunction) {
+        try {
+            const query = req.query.query as string;
+            console.log(query, " ::: query")
+            if(!query){
+                throw createHttpError("Enter something to search");
+            }
+            const posts = await this.postsService.searchPosts(query);
+            return res.status(200).json({ success: true, message: null, data:{ posts }})
+        } catch (error) {
+            console.log(error)
+            next(error);
+        }
+    }
+
 }
 
 export default PostController;

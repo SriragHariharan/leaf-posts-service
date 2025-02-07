@@ -64,4 +64,9 @@ postsRouter.get("/interaction/:postID",  validateAccessToken, (req: Request, res
     postsController.getInteractionCount(req, res, next);
 });
 
+/* search for posts */
+postsRouter.post("/search", validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+    postsController.searchPosts(req, res, next);
+})
+
 export default postsRouter;
