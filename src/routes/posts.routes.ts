@@ -20,22 +20,22 @@ postsRouter.post("/",  validateAccessToken, upload.single("picture"), (req: Requ
 });
 
 /* get post details */
-postsRouter.get("/:postID", (req: Request, res: Response, next: NextFunction) => {
+postsRouter.get("/:postID/details", (req: Request, res: Response, next: NextFunction) => {
   postsController.getPostDetails(req, res, next)  
 })
 
 /* save post */
-postsRouter.post("/save/:postID",  validateAccessToken, upload.single("picture"), (req: Request, res: Response, next: NextFunction) => {
+postsRouter.post("/save/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
     postsController.savePost(req, res, next)
 });
 
 /* unsave post */
-postsRouter.delete("/save/:postID",  validateAccessToken, upload.single("picture"), (req: Request, res: Response, next: NextFunction) => {
+postsRouter.delete("/save/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
     postsController.unsavePost(req, res, next)
 });
 
 /* view saved posts */
-postsRouter.get("/save",  validateAccessToken, upload.single("picture"), (req: Request, res: Response, next: NextFunction) => {
+postsRouter.get("/save",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
     postsController.getSavedPostsByUser(req, res, next)
 });
 
@@ -68,5 +68,10 @@ postsRouter.get("/interaction/:postID",  validateAccessToken, (req: Request, res
 postsRouter.post("/search", validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
     postsController.searchPosts(req, res, next);
 })
+
+/* fetch timeline(all things he posted) */
+postsRouter.get("/timeline/:userID", validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+    postsController.fetchTimeline(req, res, next);
+});
 
 export default postsRouter;

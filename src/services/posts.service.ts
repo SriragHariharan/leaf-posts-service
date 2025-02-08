@@ -192,7 +192,20 @@ class PostsService implements IPostService {
             const posts = await this.esRepository.searchPostsContent(query);
             return posts;
         } catch (error) {
-            console.log(error)
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        }
+    }
+
+    /* fetch timeline of users(What all he has posted) by page */
+    async fetchTimeline(userID: string, page: number): Promise<Post[]> {
+        try {
+            const posts = await this.postsRepository.fetchTimeline(userID, page)
+            return posts;
+        } catch (error) {
             if (createHttpError.isHttpError(error)) {
                 throw error;
             } else {

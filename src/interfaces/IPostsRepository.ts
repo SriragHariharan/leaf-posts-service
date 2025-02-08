@@ -13,4 +13,5 @@ export interface IPostsRepository {
     getComments(postID: string): Promise<PostComment[]>
     reportPost(postID: string, userID: string, reason: ReportReason, description: string): Promise<boolean>
     getInteractionCount(postID: string): Promise<{ likesCount: number; commentsCount: number; } | null>
+    fetchTimeline(userID: string, page: number): Promise<Post[]>
 }

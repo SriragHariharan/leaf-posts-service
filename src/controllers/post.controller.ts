@@ -147,8 +147,19 @@ class PostController {
             const posts = await this.postsService.searchPosts(query);
             return res.status(200).json({ success: true, message: null, data:{ posts }})
         } catch (error) {
-            console.log(error)
             next(error);
+        }
+    }
+
+    /* fetch timeline of users(what all he has posted) */
+    async fetchTimeline(req: Request, res: Response, next: NextFunction){
+        try {
+            const userID = req.params?.userID === "self" ? req.user?.aud : req.params.userID ;
+            const page = Number(req.query.page) ?? 1;
+            const posts = await this.postsService.fetchTimeline(userID, page);
+            return res.status(200).json({ success: true, message: null, data:{ posts }})
+        } catch (error) {
+            next(error)
         }
     }
 

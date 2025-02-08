@@ -260,6 +260,28 @@ class PostsRepository implements IPostsRepository {
             
         }
     }
+
+    /* get user timeline(ie all the posts he has posted) */
+    async fetchTimeline(userID: string, page: number): Promise<Post[]> {
+        try {
+            const posts = await prisma.post.findMany({
+                where: { userID },
+                include: {
+                    user: true,
+                    likes: true,
+                    comments: true,
+                    saves: true,
+                    reports: true,
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 3, // posts per fetch, three given below also mentions the same
+                skip: (page - 1) * 3
+            });
+            return posts;
+        }catch(error) {
+            throw createHttpError(500, "Unable to fetch timeline");
+        }
+    }
 }
 
 export default PostsRepository;

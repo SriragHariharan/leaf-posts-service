@@ -13,4 +13,5 @@ export interface IPostService {
     getInteractionCount(postID: string): Promise<{ likesCount: number; commentsCount: number; } | null>
     getPostDetails(postID: string): Promise<Post>
     searchPosts(query: string): Promise<Post[]>
+    fetchTimeline(userID: string, page: number): Promise<Post[]>
 }
