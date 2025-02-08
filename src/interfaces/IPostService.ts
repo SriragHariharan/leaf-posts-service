@@ -14,4 +14,5 @@ export interface IPostService {
     getPostDetails(postID: string): Promise<Post>
     searchPosts(query: string): Promise<Post[]>
     fetchTimeline(userID: string, page: number): Promise<Post[]>
+    deletePost(postID: string): Promise<boolean>
 }

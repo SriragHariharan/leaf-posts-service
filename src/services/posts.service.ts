@@ -7,7 +7,7 @@ import { IElasticRepository } from "../interfaces/IElasticRepository";
 import { IPostService } from "../interfaces/IPostService";
 import { PostComment } from "../interfaces/comment.interface";
 import RedisHelper from "../helpers/redis";
-import sendPostEvents from "../messaging/rabbitmq/post-events.producer";
+import { sendPostCreatedEvent, sendPostDeletedEvent } from "../messaging/rabbitmq/post-events.producer";
 
 class PostsService implements IPostService {
 
@@ -37,9 +37,25 @@ class PostsService implements IPostService {
             const postDetails = await this.postsRepository.getPostDetails(newPostID);
             
             /* send messages to rabbitMQ => feeds service */
-            sendPostEvents(postDetails?.id!, postDetails?.imageURL!, postDetails?.content!, userID!);
+            sendPostCreatedEvent(postDetails?.id!, postDetails?.imageURL!, postDetails?.content!, userID!);
             
             return postDetails
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            } else {
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        }
+    }
+
+    /* delete a post */
+    async deletePost(postID: string): Promise<boolean> {
+        try {
+            await this.postsRepository.deletePost(postID);
+            //send to rabbitMQ to be deleted from feeds service's timeline and posts table
+            sendPostDeletedEvent(postID);
+            return true;
         } catch (error) {
             if (createHttpError.isHttpError(error)) {
                 throw error;

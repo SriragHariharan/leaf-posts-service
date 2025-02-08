@@ -20,6 +20,20 @@ class PostController {
         }
     }
 
+    /* delete an existing post */
+    async deletePost(req: Request, res: Response, next: NextFunction){
+        try {
+            const postID = req.params?.postID;
+            if(!postID){
+                throw createHttpError(400, "Post not found");
+            }
+            await this.postsService.deletePost(postID)
+            return res.status(201).json({ success: true, message: "Post deleted", data: null });
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async savePost(req: Request, res: Response, next: NextFunction){
         try {
             const postID = req.params.postID;

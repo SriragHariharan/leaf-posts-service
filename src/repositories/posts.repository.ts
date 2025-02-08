@@ -21,6 +21,19 @@ class PostsRepository implements IPostsRepository {
         }
     }
 
+    /* delete a created post */
+    async deletePost(postID: string): Promise<boolean> {
+        try {
+            await prisma.post.delete({
+                where: { id: postID },
+            });
+            return true;
+        } catch (error) {
+            console.error("Error deleting post:", error);
+            throw createHttpError(500, "Unable to delete post.");
+        }
+    }
+
     /* update post's image URL to mysql */
     async updateImageURL(postID: string, imageURL: string): Promise<boolean> {
         try {
