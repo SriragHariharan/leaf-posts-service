@@ -45,12 +45,12 @@ postsRouter.post("/like/:postID",  validateAccessToken, (req: Request, res: Resp
 })
 
 /* add comment to a post */
-postsRouter.post("/comment/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+postsRouter.post("/:postID/comment",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
     postsController.addComments(req, res, next);
 })
 
 /* get all comments for a post */
-postsRouter.get("/comment/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+postsRouter.get("/:postID/comment",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
     postsController.getComments(req, res, next);
 })
 

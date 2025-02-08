@@ -206,6 +206,15 @@ class PostsRepository implements IPostsRepository {
                         comment,
                         status: "active",
                     },
+                    include: {
+                        user: {
+                            select: {
+                                userID: true,
+                                username: true,
+                                profilepic: true,
+                            },
+                        },
+                    },
                 });
 
                 await tx.post.update({
@@ -231,6 +240,9 @@ class PostsRepository implements IPostsRepository {
                 },
                 include: {
                     user: true,
+                },
+                orderBy: {
+                    createdAt: 'desc',
                 },
             });
             return comments;
