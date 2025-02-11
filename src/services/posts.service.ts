@@ -165,18 +165,18 @@ class PostsService implements IPostService {
     /* get likes and comments count(count only) for a specific post */
     async getInteractionCount(postID: string): Promise<{ likesCount: number; commentsCount: number } | null> {
         try {
-            const cacheKey = `post:${postID}:interactions`;
+            // const cacheKey = `post:${postID}:interactions`;
 
-            const cachedData = await RedisHelper.get(cacheKey);
-            if (cachedData) {
-                return JSON.parse(cachedData);
-            }
+            // const cachedData = await RedisHelper.get(cacheKey);
+            // if (cachedData) {
+            //     return JSON.parse(cachedData);
+            // }
 
             const interactions = await this.postsRepository.getInteractionCount(postID);
 
-            if (interactions) {
-                await RedisHelper.set(cacheKey, JSON.stringify(interactions), 60);
-            }
+            // if (interactions) {
+            //     await RedisHelper.set(cacheKey, JSON.stringify(interactions), 60);
+            // }
 
             return interactions;
         } catch (error) {
