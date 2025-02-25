@@ -8,6 +8,7 @@ import { IPostService } from "../interfaces/IPostService";
 import { PostComment } from "../interfaces/comment.interface";
 import RedisHelper from "../helpers/redis";
 import { sendPostCreatedEvent, sendPostDeletedEvent } from "../messaging/rabbitmq/post-events.producer";
+import sendPostRelatedNotification from "../messaging/rabbitmq/post-notifs.producer";
 
 class PostsService implements IPostService {
 
@@ -38,6 +39,9 @@ class PostsService implements IPostService {
             
             /* send messages to rabbitMQ => feeds service */
             sendPostCreatedEvent(postDetails?.id!, postDetails?.imageURL!, postDetails?.content!, userID!);
+
+            /* send notification to notification service */
+            sendPostRelatedNotification('post_created', userID, postDetails?.id!, userID);
             
             return postDetails
         } catch (error) {
@@ -123,6 +127,9 @@ class PostsService implements IPostService {
         {
         try {
             const newComment = await this.postsRepository.addComments(postID, userID, comment);
+            const postDetails = await this.postsRepository.getPostDetails(postID);
+            console.log("post details :::> ", postDetails);
+            sendPostRelatedNotification('post_commented', postDetails?.user?.userID, postDetails?.id!, userID);
             return newComment;
         } catch (error) {
             if (createHttpError.isHttpError(error)) {
