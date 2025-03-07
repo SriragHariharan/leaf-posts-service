@@ -3,12 +3,16 @@ import esClient from "../helpers/elastic-search";
 import { Post } from "../interfaces/post.interface";
 import { IElasticRepository } from "../interfaces/IElasticRepository";
 import { IDeleteElasticRepository } from "../interfaces/IDeleteElasticRepository";
+import logger from "../helpers/logger";
 
 class ElasticSearchRepository implements IElasticRepository, IDeleteElasticRepository {
 
     /* Save post to Elasticsearch */
     async createNewPost(postID: string, userID: string, content: string, imageURL: string | null, createdAt: Date): Promise<any> {
+        logger.debug(`Entering createNewPost method. Params: postID=${postID}, userID=${userID}`, { method: "createNewPost", layer: "repository" });
         try {
+            logger.info(`Indexing new post in Elasticsearch. PostID: ${postID}`, { layer: "repository" });
+
             const newPost = await esClient.index({
                 index: 'posts',
                 id: postID.toString(),
@@ -19,15 +23,23 @@ class ElasticSearchRepository implements IElasticRepository, IDeleteElasticRepos
                     createdAt: createdAt.toISOString(),
                 },
             });
+
+            logger.info(`Successfully indexed new post. PostID: ${postID}`, { layer: "repository" });
             return newPost;
         } catch (error) {
+            logger.error(`Error in createNewPost: Unable to save post. PostID: ${postID}`, { error, layer: "repository" });
             throw createHttpError(500, "Unable to save post");
+        } finally {
+            logger.debug(`Exiting createNewPost method. Params: postID=${postID}, userID=${userID}`, { method: "createNewPost", layer: "repository" });
         }
     }
 
     /* Search for posts by content */
     async searchPostsContent(query: string): Promise<Post[]> {
+        logger.debug(`Entering searchPostsContent method. Param: query=${query}`, { method: "searchPostsContent", layer: "repository" });
         try {
+            logger.info(`Searching for posts containing query: ${query}`, { layer: "repository" });
+
             // Search for posts containing the query in the content
             const result = await esClient.search({
                 index: 'posts',
@@ -64,6 +76,8 @@ class ElasticSearchRepository implements IElasticRepository, IDeleteElasticRepos
                 return acc;
             }, {});
 
+            logger.info(`Successfully searched for posts containing query: ${query}`, { layer: "repository" });
+
             // Return the posts with their IDs, content, and associated user details
             return result.hits.hits.map((hit: any) => ({
                 id: hit._id, // Include the post ID
@@ -71,22 +85,32 @@ class ElasticSearchRepository implements IElasticRepository, IDeleteElasticRepos
                 user: users[hit._source.userID], // Include the user details
             }));
         } catch (error) {
-            console.log(error)
+            logger.error(`Error in searchPostsContent: Unable to search for query: ${query}`, { error, layer: "repository" });
             throw createHttpError(500, "Unable to search. Please try again.");
+        } finally {
+            logger.debug(`Exiting searchPostsContent method. Param: query=${query}`, { method: "searchPostsContent", layer: "repository" });
         }
     }
 
-    //delete a post
+    /* Delete a post from Elasticsearch */
     async deletePost(postID: string): Promise<boolean> {
+        logger.debug(`Entering deletePost method. Param: postID=${postID}`, { method: "deletePost", layer: "repository" });
         try {
+            logger.info(`Deleting post from Elasticsearch. PostID: ${postID}`, { layer: "repository" });
+
             const deletedResponse = await esClient.delete({
                 index: 'posts',
                 id: postID
             });
+
+            logger.info(`Successfully deleted post. PostID: ${postID}`, { layer: "repository" });
             return deletedResponse;
         } catch (error) {
+            logger.error(`Error in deletePost: Unable to delete post. PostID: ${postID}`, { error, layer: "repository" });
             throw createHttpError(500, "Unable to delete post.");
-        }   
+        } finally {
+            logger.debug(`Exiting deletePost method. Param: postID=${postID}`, { method: "deletePost", layer: "repository" });
+        }
     }
 }
 

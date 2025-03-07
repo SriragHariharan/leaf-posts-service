@@ -22,6 +22,6 @@ export interface PostReport {
     status: ReportStatus;
 }
 
-type ReportReason =   "adult_content" | "irrelevant_content" | "spam" | "other"
+export type ReportReason =   "adult_content" | "irrelevant_content" | "spam" | "other"
 
 type ReportStatus = "pending" | "resolved" | "rejected" | "reviewed"
