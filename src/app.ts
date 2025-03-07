@@ -6,6 +6,7 @@ import bodyParser from 'body-parser';
 //rabbitmq consumer file
 import "./messaging/rabbitmq/user-events.consumer"
 import postsRouter from './routes/posts.routes';
+import adminRouter from './routes/admin.routes';
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
 app.use("/", postsRouter );
+app.use("/admin", adminRouter );
 
 
 //handle endpoints not found: 404

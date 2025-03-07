@@ -12,4 +12,16 @@ export interface Post {
     groupID?: string | null;
 }
 
-export type ReportReason =   "adult_content" | "irrelevant_content" | "spam" | "other"
+export interface PostReport {
+    id: number;
+    postID: string;
+    userID: string;
+    reason: ReportReason;
+    description: string;
+    createdAt: Date;
+    status: ReportStatus;
+}
+
+type ReportReason =   "adult_content" | "irrelevant_content" | "spam" | "other"
+
+type ReportStatus = "pending" | "resolved" | "rejected" | "reviewed"

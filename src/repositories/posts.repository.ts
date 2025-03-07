@@ -24,8 +24,9 @@ class PostsRepository implements IPostsRepository {
     /* delete a created post */
     async deletePost(postID: string): Promise<boolean> {
         try {
-            await prisma.post.delete({
+            await prisma.post.update({
                 where: { id: postID },
+                data: { isDeleted: true },
             });
             return true;
         } catch (error) {

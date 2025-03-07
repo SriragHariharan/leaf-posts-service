@@ -8,35 +8,35 @@ datasource db {
 }
 
 model User {
-  userID     String    @id
-  username   String    @unique
-  profilepic String?
-  posts      Post[]
-  postLikes  PostLike[]
-  postComments PostComment[]
-  postSaves  PostSave[]
-  postReports PostReport[]
-  sentPostcards    Postcard[] @relation("SentPostcards")
-  receivedPostcards Postcard[] @relation("ReceivedPostcards")
+  userID            String        @id
+  username          String        @unique
+  profilepic        String?
+  posts             Post[]
+  postLikes         PostLike[]
+  postComments      PostComment[]
+  postSaves         PostSave[]
+  postReports       PostReport[]
+  sentPostcards     Postcard[]    @relation("SentPostcards")
+  receivedPostcards Postcard[]    @relation("ReceivedPostcards")
 }
 
 model Post {
-  id            String   @id @default(uuid())
+  id            String        @id @default(uuid())
   userID        String
   imageURL      String?
-  content       String   @db.Text
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  likesCount    Int      @default(0)
-  commentsCount Int      @default(0)
-  status        Status   @default(active)
-  isReported    Boolean  @default(false)
+  content       String        @db.Text
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  likesCount    Int           @default(0)
+  commentsCount Int           @default(0)
+  status        Status        @default(active)
+  isDeleted     Boolean       @default(false)
   groupID       String?
-  user          User     @relation(fields: [userID], references: [userID])
-  likes        PostLike[]
-  comments     PostComment[]
-  saves        PostSave[]
-  reports      PostReport[]
+  user          User          @relation(fields: [userID], references: [userID])
+  likes         PostLike[]
+  comments      PostComment[]
+  saves         PostSave[]
+  reports       PostReport[]
 }
 
 model PostLike {
@@ -49,15 +49,15 @@ model PostLike {
 }
 
 model PostComment {
-  id        Int      @id @default(autoincrement())
+  id        Int           @id @default(autoincrement())
   postID    String
   userID    String
   comment   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
   status    CommentStatus
-  post      Post     @relation(fields: [postID], references: [id])
-  user      User     @relation(fields: [userID], references: [userID])
+  post      Post          @relation(fields: [postID], references: [id])
+  user      User          @relation(fields: [userID], references: [userID])
 }
 
 model PostSave {
@@ -70,15 +70,15 @@ model PostSave {
 }
 
 model PostReport {
-  id          Int        @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   postID      String
   userID      String
   reason      ReportReason
   description String
-  createdAt   DateTime @default(now())
+  createdAt   DateTime     @default(now())
   status      ReportStatus
-  post        Post     @relation(fields: [postID], references: [id])
-  user        User     @relation(fields: [userID], references: [userID])
+  post        Post         @relation(fields: [postID], references: [id])
+  user        User         @relation(fields: [userID], references: [userID])
 }
 
 model Postcard {
@@ -113,6 +113,6 @@ enum ReportReason {
 
 enum ReportStatus {
   pending
-  reviewed
+  rejected
   resolved
 }
