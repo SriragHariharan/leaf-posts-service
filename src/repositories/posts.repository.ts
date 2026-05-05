@@ -8,7 +8,7 @@ import logger from "../helpers/logger";
 class PostsRepository implements IPostsRepository {
 
     /* Save a new post to MySQL */
-    async createNewPost(userID: string, content: string): Promise<Post> {
+    async createNewPost(userID: string, content: string): Promise<Post | any> {
         logger.debug(`Entering createNewPost method. Params: userID=${userID}`, { method: "createNewPost", layer: "repository" });
         try {
             logger.info(`Creating new post for userID: ${userID}`, { layer: "repository" });
@@ -194,7 +194,7 @@ class PostsRepository implements IPostsRepository {
     }
 
     /* Get all saved posts for a specific user */
-    async getSavedPostsByUser(userID: string): Promise<Promise<{ post: Post }[]>> {
+    async getSavedPostsByUser(userID: string): Promise<Promise<{ post: Post | any }[]>> {
         logger.debug(`Entering getSavedPostsByUser method. Param: userID=${userID}`, { method: "getSavedPostsByUser", layer: "repository" });
         try {
             logger.info(`Fetching saved posts for user. UserID: ${userID}`, { layer: "repository" });

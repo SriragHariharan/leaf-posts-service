@@ -10,6 +10,7 @@ export interface Post {
     status?: "active" | "blocked" | "deleted";
     isReported?: boolean;
     groupID?: string | null;
+    user: { userID: string; username: string; }
 }
 
 export interface PostReport {

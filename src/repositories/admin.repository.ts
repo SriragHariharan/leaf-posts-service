@@ -72,14 +72,28 @@ class AdminRepository implements IAdminRepository {
     }
 
     // Update the status of a post report
-    async updatePostReportStatus(postID: string, status: string): Promise<PostReport | null> {
+    async updatePostReportStatus(postID: string, status: "pending" | "rejected" | "resolved"): Promise<PostReport | null> {
         logger.debug(`Entering updatePostReportStatus method. Params: postID=${postID}, status=${status}`, { method: "updatePostReportStatus", layer: "repository" });
         try {
             logger.info(`Updating post report status for postID: ${postID} to ${status}.`, { layer: "repository" });
 
-            const updatedPostReport = await prisma.postReport.update({
+            // First, find the post report by postID
+            const postReport = await prisma.postReport.findFirst({
                 where: {
                     postID: postID
+                }
+            });
+
+            // If no report is found, throw an error
+            if (!postReport) {
+                logger.error(`Post report not found for postID: ${postID}.`, { layer: "repository" });
+                throw createHttpError(404, "Post report not found");
+            }
+
+            // Now update the post report using its id
+            const updatedPostReport = await prisma.postReport.update({
+                where: {
+                    id: postReport.id // Use the id of the found post report
                 },
                 data: {
                     status: status
@@ -174,7 +188,7 @@ class AdminRepository implements IAdminRepository {
     }
 
     // Update the status of a single report by reportID
-    async updateSingleReportStatus(reportID: string, status: string): Promise<boolean> {
+    async updateSingleReportStatus(reportID: string, status: "pending" | "rejected" | "resolved"): Promise<boolean> {
         logger.debug(`Entering updateSingleReportStatus method. Params: reportID=${reportID}, status=${status}`, { method: "updateSingleReportStatus", layer: "repository" });
         try {
             logger.info(`Updating report status for reportID: ${reportID} to ${status}.`, { layer: "repository" });
@@ -204,7 +218,7 @@ class AdminRepository implements IAdminRepository {
     }
 
     // Update the status of all reports for a specific post by postID
-    async updateReportStatusByPostID(postID: string, status: string): Promise<boolean> {
+    async updateReportStatusByPostID(postID: string, status: "pending" | "rejected" | "resolved"): Promise<boolean> {
         logger.debug(`Entering updateReportStatusByPostID method. Params: postID=${postID}, status=${status}`, { method: "updateReportStatusByPostID", layer: "repository" });
         try {
             logger.info(`Updating report status for all reports of postID: ${postID} to ${status}.`, { layer: "repository" });

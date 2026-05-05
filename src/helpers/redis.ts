@@ -5,7 +5,7 @@ class RedisHelper {
 
     constructor() {
         this.client = createClient({
-            url: 'redis://localhost:6379'
+            url: process.env.REDIS_URL
         });
 
         this.client.on('error', (err) => {

@@ -2,7 +2,7 @@
 CREATE TABLE `User` (
     `userID` VARCHAR(191) NOT NULL,
     `username` VARCHAR(191) NOT NULL,
-    `profilepic` VARCHAR(191) NOT NULL,
+    `profilepic` VARCHAR(191) NULL,
 
     UNIQUE INDEX `User_username_key`(`username`),
     PRIMARY KEY (`userID`)
@@ -12,17 +12,16 @@ CREATE TABLE `User` (
 CREATE TABLE `Post` (
     `id` VARCHAR(191) NOT NULL,
     `userID` VARCHAR(191) NOT NULL,
-    `imageURL` VARCHAR(191) NOT NULL,
-    `content` VARCHAR(191) NOT NULL,
+    `imageURL` VARCHAR(191) NULL,
+    `content` TEXT NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
     `likesCount` INTEGER NOT NULL DEFAULT 0,
     `commentsCount` INTEGER NOT NULL DEFAULT 0,
     `status` ENUM('active', 'blocked', 'deleted') NOT NULL DEFAULT 'active',
-    `isReported` BOOLEAN NOT NULL DEFAULT false,
+    `isDeleted` BOOLEAN NOT NULL DEFAULT false,
     `groupID` VARCHAR(191) NULL,
 
-    UNIQUE INDEX `Post_imageURL_key`(`imageURL`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -67,7 +66,7 @@ CREATE TABLE `PostReport` (
     `reason` ENUM('adult_content', 'irrelevant_content', 'spam', 'other') NOT NULL,
     `description` VARCHAR(191) NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `status` ENUM('pending', 'reviewed', 'resolved') NOT NULL,
+    `status` ENUM('pending', 'rejected', 'resolved') NOT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

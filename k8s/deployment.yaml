@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leaf-post-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: leaf-post-service
+  template:
+    metadata:
+      labels:
+        app: leaf-post-service
+    spec:
+      containers:
+        - name: leaf-post-service
+          image: sriraghariharan/leaf-post-service:v4
+          ports:
+            - containerPort: 2002
+          envFrom:
+            - configMapRef:
+                name: leaf-post-service-config
+          # resources:
+          #   requests:
+          #     memory: "256Mi"
+          #     cpu: "500m"  # 500 milliCPU, or 0.5 CPU cores
+          #   limits:
+          #     memory: "512Mi"
+          #     cpu: "1"  # 1 CPU core
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: leaf-post-service
+spec:
+  selector:
+    app: leaf-post-service
+  ports:
+    - protocol: TCP
+      port: 2002
+      targetPort: 2002

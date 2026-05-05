@@ -32,7 +32,7 @@ export function validateAccessToken(req: Request, _res: Response, next: NextFunc
         const resp = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!);
         req.user = resp;
 
-        logger.info(`Access token validated successfully for user: ${resp?.aud}`, { layer: "middleware" });
+        logger.info(`Access token validated successfully for user: ${resp}`, { layer: "middleware" });
         next();
     } catch (error) {
         logger.error(`Error validating access token: ${error}`, { error, layer: "middleware" });
