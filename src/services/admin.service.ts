@@ -3,7 +3,7 @@ import { IAdminRepository } from "../interfaces/IAdminRepository";
 import { IAdminService } from "../interfaces/IAdminService";
 import { IDeleteElasticRepository } from "../interfaces/IDeleteElasticRepository";
 import { Post, PostReport } from "../interfaces/post.interface";
-import { sendPostDeletedEvent } from "../messaging/rabbitmq/post-events.producer";
+import { sendPostDeletedEvent } from "../messaging/kafka/post-events.producer";
 
 class AdminService implements IAdminService {
     private adminRepository: IAdminRepository;

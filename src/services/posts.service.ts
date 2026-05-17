@@ -7,8 +7,8 @@ import { IElasticRepository } from "../interfaces/IElasticRepository";
 import { IPostService } from "../interfaces/IPostService";
 import { PostComment } from "../interfaces/comment.interface";
 import RedisHelper from "../helpers/redis";
-import { sendPostCreatedEvent, sendPostDeletedEvent } from "../messaging/rabbitmq/post-events.producer";
-import sendPostRelatedNotification from "../messaging/rabbitmq/post-notifs.producer";
+import { sendPostCreatedEvent, sendPostDeletedEvent } from "../messaging/kafka/post-events.producer";
+import sendPostRelatedNotification from "../messaging/kafka/post-notifs.producer";
 import logger from "../helpers/logger";
 
 class PostsService implements IPostService {

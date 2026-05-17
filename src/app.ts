@@ -3,8 +3,7 @@ import 'dotenv/config'
 import createHttpError from 'http-errors';
 import bodyParser from 'body-parser';
 
-//rabbitmq consumer file
-import "./messaging/rabbitmq/user-events.consumer"
+import "./messaging/kafka/user-events.consumer";
 import postsRouter from './routes/posts.routes';
 import adminRouter from './routes/admin.routes';
 
