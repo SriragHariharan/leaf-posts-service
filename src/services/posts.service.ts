@@ -1,5 +1,5 @@
 import createHttpError from "http-errors";
-import { uploadToS3 } from "../helpers/s3.helper";
+import { uploadToCloudinary, deleteFromCloudinary } from "../helpers/cloudinary.helper";
 import compressImage from "../helpers/sharp.helper";
 import { IPostsRepository } from "../interfaces/IPostsRepository";
 import { Post, ReportReason } from "../interfaces/post.interface";
@@ -33,8 +33,8 @@ class PostsService implements IPostService {
             if (imageBuffer) {
                 logger.info(`Compressing and uploading image for post. PostID: ${newPostID}`, { layer: "service" });
                 const compressedImageBufferString = await compressImage(imageBuffer);
-                const imageName = `posts/${newPostID}.jpg`;
-                const imageURL = await uploadToS3(compressedImageBufferString, imageName);
+                const publicId = `posts/${newPostID}`;
+                const imageURL = await uploadToCloudinary(compressedImageBufferString, publicId);
                 await this.postsRepository.updateImageURL(newPostID, imageURL);
                 await this.esRepository.createNewPost(newPostID, userID, content, imageURL, newPost.createdAt!);
             } else {
@@ -73,6 +73,7 @@ class PostsService implements IPostService {
         try {
             logger.info(`Deleting post. PostID: ${postID}`, { layer: "service" });
 
+            await deleteFromCloudinary(`posts/${postID}`);
             await this.postsRepository.deletePost(postID);
 
             /* Send message to RabbitMQ to delete post from feeds service */
