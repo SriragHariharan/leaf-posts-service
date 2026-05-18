@@ -3,6 +3,7 @@ import { Post, ReportReason } from "./post.interface";
 
 export interface IPostsRepository {
     createNewPost( userID: string, content: string): Promise<Post>
+    updatePost(postID: string, content: string): Promise<boolean>
     updateImageURL(postID: string, imageURL: string): Promise<boolean>
     getPostDetails(postID: string): Promise<Post>
     savePost(postID: string, userID: string): Promise<{ id: number; userID: string; createdAt: Date; postID: string; }>

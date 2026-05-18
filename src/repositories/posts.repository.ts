@@ -51,6 +51,23 @@ class PostsRepository implements IPostsRepository {
         }
     }
 
+    /* Update post content */
+    async updatePost(postID: string, content: string): Promise<boolean> {
+        logger.debug(`Entering updatePost method. Params: postID=${postID}`, { method: "updatePost", layer: "repository" });
+        try {
+            await prisma.post.update({
+                where: { id: postID },
+                data: { content },
+            });
+            return true;
+        } catch (error) {
+            logger.error(`Error in updatePost: Unable to update post. PostID: ${postID}`, { error, layer: "repository" });
+            throw createHttpError(500, "Unable to update post");
+        } finally {
+            logger.debug(`Exiting updatePost method. Params: postID=${postID}`, { method: "updatePost", layer: "repository" });
+        }
+    }
+
     /* Update the image URL of a post */
     async updateImageURL(postID: string, imageURL: string): Promise<boolean> {
         logger.debug(`Entering updateImageURL method. Params: postID=${postID}, imageURL=${imageURL}`, { method: "updateImageURL", layer: "repository" });

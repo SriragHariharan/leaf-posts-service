@@ -7,7 +7,7 @@ import { IElasticRepository } from "../interfaces/IElasticRepository";
 import { IPostService } from "../interfaces/IPostService";
 import { PostComment } from "../interfaces/comment.interface";
 import RedisHelper from "../helpers/redis";
-import { sendPostCreatedEvent, sendPostDeletedEvent } from "../messaging/kafka/post-events.producer";
+import { sendPostCreatedEvent, sendPostDeletedEvent, sendPostEditedEvent } from "../messaging/kafka/post-events.producer";
 import sendPostRelatedNotification from "../messaging/kafka/post-notifs.producer";
 import logger from "../helpers/logger";
 
@@ -67,6 +67,43 @@ class PostsService implements IPostService {
         }
     }
 
+    /* Update an existing post */
+    async updatePost(userID: string, postID: string, imageBuffer: Buffer | null, content: string): Promise<Post> {
+        logger.debug(`Entering updatePost method. Params: userID=${userID}, postID=${postID}`, { method: "updatePost", layer: "service" });
+        try {
+            const existing = await this.postsRepository.getPostDetails(postID);
+            if (existing.user?.userID !== userID) {
+                throw createHttpError(403, "Not allowed to update this post");
+            }
+
+            await this.postsRepository.updatePost(postID, content);
+
+            let imageURL = existing.imageURL ?? null;
+            if (imageBuffer) {
+                const compressedImageBufferString = await compressImage(imageBuffer);
+                const publicId = `posts/${postID}`;
+                imageURL = await uploadToCloudinary(compressedImageBufferString, publicId);
+                await this.postsRepository.updateImageURL(postID, imageURL);
+            }
+
+            await this.esRepository.updatePost(postID, userID, content, imageURL);
+
+            const postDetails = await this.postsRepository.getPostDetails(postID);
+            sendPostEditedEvent(postDetails.id!, postDetails.imageURL ?? null, postDetails.content!, userID);
+
+            return postDetails;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                logger.error(`HttpError in updatePost: ${error.message}`, { error, layer: "service" });
+                throw error;
+            }
+            logger.error(`Unexpected error in updatePost.`, { error, layer: "service" });
+            throw createHttpError(500, "An unexpected error occurred");
+        } finally {
+            logger.debug(`Exiting updatePost method. Params: postID=${postID}`, { method: "updatePost", layer: "service" });
+        }
+    }
+
     /* Delete a post */
     async deletePost(postID: string): Promise<boolean> {
         logger.debug(`Entering deletePost method. Param: postID=${postID}`, { method: "deletePost", layer: "service" });
@@ -75,6 +112,9 @@ class PostsService implements IPostService {
 
             await deleteFromCloudinary(`posts/${postID}`);
             await this.postsRepository.deletePost(postID);
+
+            logger.info(`Deleting post from Elasticsearch. PostID: ${postID}`, { layer: "service" });
+            await this.esRepository.deletePost(postID);
 
             /* Send message to RabbitMQ to delete post from feeds service */
             logger.info(`Sending post deleted event to RabbitMQ. PostID: ${postID}`, { layer: "service" });

@@ -34,6 +34,29 @@ class ElasticSearchRepository implements IElasticRepository, IDeleteElasticRepos
         }
     }
 
+    /* Update a post in Elasticsearch */
+    async updatePost(postID: string, userID: string, content: string, imageURL: string | null): Promise<void> {
+        logger.debug(`Entering updatePost method. Params: postID=${postID}`, { method: "updatePost", layer: "repository" });
+        try {
+            await esClient.update({
+                index: "posts",
+                id: postID.toString(),
+                body: {
+                    doc: {
+                        userID,
+                        content,
+                        imageURL,
+                    },
+                },
+            });
+        } catch (error) {
+            logger.error(`Error in updatePost: Unable to update post. PostID: ${postID}`, { error, layer: "repository" });
+            throw createHttpError(500, "Unable to update post");
+        } finally {
+            logger.debug(`Exiting updatePost method. Params: postID=${postID}`, { method: "updatePost", layer: "repository" });
+        }
+    }
+
     /* Search for posts by content */
     async searchPostsContent(query: string): Promise<Post[]> {
         logger.debug(`Entering searchPostsContent method. Param: query=${query}`, {

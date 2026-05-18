@@ -74,6 +74,10 @@ postsRouter.get("/timeline/:userID", validateAccessToken, (req: Request, res: Re
     postsController.fetchTimeline(req, res, next);
 });
 
+postsRouter.patch("/:postID", validateAccessToken, upload.single("picture"), (req: Request, res: Response, next: NextFunction) => {
+    postsController.updatePost(req, res, next);
+});
+
 postsRouter.delete("/:postID/delete", validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
     postsController.deletePost(req, res, next);
 }) 

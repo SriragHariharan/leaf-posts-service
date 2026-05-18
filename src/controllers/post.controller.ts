@@ -31,6 +31,32 @@ class PostController {
         }
     }
 
+    /* Update an existing post */
+    async updatePost(req: Request, res: Response, next: NextFunction) {
+        logger.debug(`Entering updatePost method. Param: postID=${req.params.postID}`, { method: "updatePost", layer: "controller" });
+        try {
+            const userID = req?.user?.aud;
+            const postID = req.params?.postID;
+            const file = req?.file ? req.file.buffer : null;
+            const content = req?.body?.content;
+
+            if (!postID) {
+                throw createHttpError(400, "Post not found");
+            }
+            if (!content) {
+                throw createHttpError(400, "Content is required");
+            }
+
+            const post = await this.postsService.updatePost(userID, postID, file, content);
+            return res.status(200).json({ message: "", data: { post } });
+        } catch (error) {
+            logger.error(`Error in updatePost: ${error}`, { error, layer: "controller" });
+            next(error);
+        } finally {
+            logger.debug(`Exiting updatePost method. Param: postID=${req.params.postID}`, { method: "updatePost", layer: "controller" });
+        }
+    }
+
     /* Delete an existing post */
     async deletePost(req: Request, res: Response, next: NextFunction) {
         logger.debug(`Entering deletePost method. Param: postID=${req.params.postID}`, { method: "deletePost", layer: "controller" });
