@@ -3,12 +3,20 @@ import { uploadToCloudinary, deleteFromCloudinary } from "../helpers/cloudinary.
 import compressImage from "../helpers/sharp.helper";
 import { IPostsRepository } from "../interfaces/IPostsRepository";
 import { Post, ReportReason } from "../interfaces/post.interface";
+import { SearchUser } from "../interfaces/user.interface";
 import { IElasticRepository } from "../interfaces/IElasticRepository";
 import { IPostService } from "../interfaces/IPostService";
 import { PostComment } from "../interfaces/comment.interface";
 import RedisHelper from "../helpers/redis";
 import { sendPostCreatedEvent, sendPostDeletedEvent, sendPostEditedEvent } from "../messaging/kafka/post-events.producer";
 import sendPostRelatedNotification from "../messaging/kafka/post-notifs.producer";
+import { publishInteractionEvent } from "../messaging/kafka/interaction-events.producer";
+import type {
+    AddCommentResult,
+    DeleteCommentResult,
+    InteractionEventType,
+    ToggleLikeResult,
+} from "../interfaces/interaction.interface";
 import logger from "../helpers/logger";
 
 class PostsService implements IPostService {
@@ -205,15 +213,28 @@ class PostsService implements IPostService {
     }
 
     /* Like or unlike a post */
-    async toggleLike(postID: string, userID: string): Promise<boolean> {
+    async toggleLike(postID: string, userID: string): Promise<ToggleLikeResult> {
         logger.debug(`Entering toggleLike method. Params: postID=${postID}, userID=${userID}`, { method: "toggleLike", layer: "service" });
         try {
             logger.info(`Toggling like for post. PostID: ${postID}, UserID: ${userID}`, { layer: "service" });
 
-            const response = await this.postsRepository.toggleLike(postID, userID);
+            const result = await this.postsRepository.toggleLike(postID, userID);
+            const postDetails = await this.postsRepository.getPostDetails(postID);
+            const targetUserId = postDetails?.user?.userID;
+
+            if (targetUserId) {
+                const eventType: InteractionEventType = result.isLiked ? "post.liked" : "post.unliked";
+                await publishInteractionEvent({
+                    eventType,
+                    actorUserId: userID,
+                    targetUserId,
+                    postId: postID,
+                    timestamp: new Date().toISOString(),
+                });
+            }
 
             logger.info(`Successfully toggled like for post. PostID: ${postID}, UserID: ${userID}`, { layer: "service" });
-            return response;
+            return result;
         } catch (error) {
             if (createHttpError.isHttpError(error)) {
                 logger.error(`HttpError in toggleLike: ${error.message}`, { error, layer: "service" });
@@ -228,19 +249,29 @@ class PostsService implements IPostService {
     }
 
     /* Add a comment to a post */
-    async addComments(postID: string, userID: string, comment: string): Promise<PostComment> {
+    async addComments(postID: string, userID: string, comment: string): Promise<AddCommentResult> {
         logger.debug(`Entering addComments method. Params: postID=${postID}, userID=${userID}`, { method: "addComments", layer: "service" });
         try {
             logger.info(`Adding comment to post. PostID: ${postID}, UserID: ${userID}`, { layer: "service" });
 
-            const newComment = await this.postsRepository.addComments(postID, userID, comment);
+            const result = await this.postsRepository.addComments(postID, userID, comment);
             const postDetails = await this.postsRepository.getPostDetails(postID);
+            const targetUserId = postDetails?.user?.userID;
+            const commentRecord = result.comment as { id?: number };
 
-            logger.info(`Sending post-related notification for comment. PostID: ${postID}`, { layer: "service" });
-            sendPostRelatedNotification('post_commented', postDetails?.user?.userID, postDetails?.id!, userID);
+            if (targetUserId && commentRecord.id != null) {
+                await publishInteractionEvent({
+                    eventType: "post.commented",
+                    actorUserId: userID,
+                    targetUserId,
+                    postId: postID,
+                    commentId: String(commentRecord.id),
+                    timestamp: new Date().toISOString(),
+                });
+            }
 
             logger.info(`Successfully added comment to post. PostID: ${postID}, UserID: ${userID}`, { layer: "service" });
-            return newComment;
+            return result;
         } catch (error) {
             if (createHttpError.isHttpError(error)) {
                 logger.error(`HttpError in addComments: ${error.message}`, { error, layer: "service" });
@@ -251,6 +282,38 @@ class PostsService implements IPostService {
             }
         } finally {
             logger.debug(`Exiting addComments method. Params: postID=${postID}, userID=${userID}`, { method: "addComments", layer: "service" });
+        }
+    }
+
+    /* Delete a comment from a post */
+    async deleteComment(postID: string, commentID: number, userID: string): Promise<DeleteCommentResult> {
+        logger.debug(`Entering deleteComment method. Params: postID=${postID}, commentID=${commentID}, userID=${userID}`, { method: "deleteComment", layer: "service" });
+        try {
+            const result = await this.postsRepository.deleteComment(postID, commentID, userID);
+            const postDetails = await this.postsRepository.getPostDetails(postID);
+            const targetUserId = postDetails?.user?.userID;
+
+            if (targetUserId && !result.isCommented) {
+                await publishInteractionEvent({
+                    eventType: "post.uncommented",
+                    actorUserId: userID,
+                    targetUserId,
+                    postId: postID,
+                    commentId: String(commentID),
+                    timestamp: new Date().toISOString(),
+                });
+            }
+
+            return result;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                logger.error(`HttpError in deleteComment: ${error.message}`, { error, layer: "service" });
+                throw error;
+            }
+            logger.error(`Unexpected error in deleteComment.`, { error, layer: "service" });
+            throw createHttpError(500, "An unexpected error occurred");
+        } finally {
+            logger.debug(`Exiting deleteComment method. Params: postID=${postID}, commentID=${commentID}`, { method: "deleteComment", layer: "service" });
         }
     }
 
@@ -366,6 +429,32 @@ class PostsService implements IPostService {
             }
         } finally {
             logger.debug(`Exiting searchPosts method. Param: query=${query}`, { method: "searchPosts", layer: "service" });
+        }
+    }
+
+    /* Search for users by username */
+    async searchUsers(query: string, excludeUserID?: string): Promise<SearchUser[]> {
+        logger.debug(`Entering searchUsers method. Param: query=${query}`, { method: "searchUsers", layer: "service" });
+        try {
+            logger.info(`Searching for users matching query: ${query}`, { layer: "service" });
+
+            const users = await this.esRepository.searchUsersContent(query);
+            const filtered = excludeUserID
+                ? users.filter((u) => u.userID !== excludeUserID)
+                : users;
+
+            logger.info(`Successfully fetched users for query: ${query}`, { layer: "service" });
+            return filtered;
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                logger.error(`HttpError in searchUsers: ${error.message}`, { error, layer: "service" });
+                throw error;
+            } else {
+                logger.error(`Unexpected error in searchUsers.`, { error, layer: "service" });
+                throw createHttpError(500, "An unexpected error occurred");
+            }
+        } finally {
+            logger.debug(`Exiting searchUsers method. Param: query=${query}`, { method: "searchUsers", layer: "service" });
         }
     }
 

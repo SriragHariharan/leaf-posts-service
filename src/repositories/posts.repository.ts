@@ -3,6 +3,11 @@ import prisma from "../helpers/prisma";
 import { IPostsRepository } from "../interfaces/IPostsRepository";
 import { Post, ReportReason } from "../interfaces/post.interface";
 import { PostComment } from "../interfaces/comment.interface";
+import {
+    AddCommentResult,
+    DeleteCommentResult,
+    ToggleLikeResult,
+} from "../interfaces/interaction.interface";
 import logger from "../helpers/logger";
 
 class PostsRepository implements IPostsRepository {
@@ -237,16 +242,25 @@ class PostsRepository implements IPostsRepository {
     }
 
     /* Toggle like/unlike for a post */
-    async toggleLike(postID: string, userID: string): Promise<boolean> {
+    async toggleLike(postID: string, userID: string): Promise<ToggleLikeResult> {
         logger.debug(`Entering toggleLike method. Params: postID=${postID}, userID=${userID}`, { method: "toggleLike", layer: "repository" });
         try {
             logger.info(`Toggling like for post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
 
             return await prisma.$transaction(async (tx) => {
+                const post = await tx.post.findUnique({
+                    where: { id: postID },
+                    select: { id: true },
+                });
+                if (!post) {
+                    throw createHttpError(404, "Post not found");
+                }
+
                 const existingLike = await tx.postLike.findFirst({
                     where: { postID, userID },
                 });
 
+                let isLiked: boolean;
                 if (existingLike) {
                     await tx.postLike.delete({
                         where: { id: existingLike.id },
@@ -257,8 +271,8 @@ class PostsRepository implements IPostsRepository {
                         data: { likesCount: { decrement: 1 } },
                     });
 
+                    isLiked = false;
                     logger.info(`Successfully unliked post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-                    return false;
                 } else {
                     await tx.postLike.create({
                         data: { postID, userID },
@@ -269,11 +283,24 @@ class PostsRepository implements IPostsRepository {
                         data: { likesCount: { increment: 1 } },
                     });
 
+                    isLiked = true;
                     logger.info(`Successfully liked post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-                    return true;
                 }
+
+                const updatedPost = await tx.post.findUnique({
+                    where: { id: postID },
+                    select: { likesCount: true },
+                });
+
+                return {
+                    isLiked,
+                    likesCount: updatedPost?.likesCount ?? 0,
+                };
             });
         } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            }
             logger.error(`Error in toggleLike: Unable to toggle like for post. PostID: ${postID}, UserID: ${userID}`, { error, layer: "repository" });
             throw createHttpError(500, "Something went wrong");
         } finally {
@@ -282,12 +309,20 @@ class PostsRepository implements IPostsRepository {
     }
 
     /* Add a comment to a post */
-    async addComments(postID: string, userID: string, comment: string): Promise<PostComment> {
+    async addComments(postID: string, userID: string, comment: string): Promise<AddCommentResult> {
         logger.debug(`Entering addComments method. Params: postID=${postID}, userID=${userID}`, { method: "addComments", layer: "repository" });
         try {
             logger.info(`Adding comment to post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
 
             return await prisma.$transaction(async (tx) => {
+                const post = await tx.post.findUnique({
+                    where: { id: postID },
+                    select: { id: true },
+                });
+                if (!post) {
+                    throw createHttpError(404, "Post not found");
+                }
+
                 const newComment = await tx.postComment.create({
                     data: {
                         postID,
@@ -311,14 +346,77 @@ class PostsRepository implements IPostsRepository {
                     data: { commentsCount: { increment: 1 } },
                 });
 
+                const updatedPost = await tx.post.findUnique({
+                    where: { id: postID },
+                    select: { commentsCount: true },
+                });
+
                 logger.info(`Successfully added comment to post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-                return newComment;
+                return {
+                    comment: newComment,
+                    commentsCount: updatedPost?.commentsCount ?? 0,
+                    isCommented: true,
+                };
             });
         } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            }
             logger.error(`Error in addComments: Unable to comment on post. PostID: ${postID}, UserID: ${userID}`, { error, layer: "repository" });
             throw createHttpError(500, "Unable to comment on post");
         } finally {
             logger.debug(`Exiting addComments method. Params: postID=${postID}, userID=${userID}`, { method: "addComments", layer: "repository" });
+        }
+    }
+
+    /* Soft-delete a comment authored by the user */
+    async deleteComment(postID: string, commentID: number, userID: string): Promise<DeleteCommentResult> {
+        logger.debug(`Entering deleteComment method. Params: postID=${postID}, commentID=${commentID}, userID=${userID}`, { method: "deleteComment", layer: "repository" });
+        try {
+            return await prisma.$transaction(async (tx) => {
+                const existingComment = await tx.postComment.findFirst({
+                    where: { id: commentID, postID, status: "active" },
+                });
+
+                if (!existingComment) {
+                    throw createHttpError(404, "Comment not found");
+                }
+                if (existingComment.userID !== userID) {
+                    throw createHttpError(403, "Not allowed to delete this comment");
+                }
+
+                await tx.postComment.update({
+                    where: { id: commentID },
+                    data: { status: "deleted" },
+                });
+
+                await tx.post.update({
+                    where: { id: postID },
+                    data: { commentsCount: { decrement: 1 } },
+                });
+
+                const remainingComments = await tx.postComment.count({
+                    where: { postID, userID, status: "active" },
+                });
+
+                const updatedPost = await tx.post.findUnique({
+                    where: { id: postID },
+                    select: { commentsCount: true },
+                });
+
+                return {
+                    commentsCount: updatedPost?.commentsCount ?? 0,
+                    isCommented: remainingComments > 0,
+                };
+            });
+        } catch (error) {
+            if (createHttpError.isHttpError(error)) {
+                throw error;
+            }
+            logger.error(`Error in deleteComment: PostID: ${postID}, commentID: ${commentID}`, { error, layer: "repository" });
+            throw createHttpError(500, "Unable to delete comment");
+        } finally {
+            logger.debug(`Exiting deleteComment method. Params: postID=${postID}, commentID=${commentID}`, { method: "deleteComment", layer: "repository" });
         }
     }
 

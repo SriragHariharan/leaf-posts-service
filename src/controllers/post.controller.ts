@@ -162,7 +162,11 @@ class PostController {
             let response = await this.postsService.toggleLike(postID, userID);
 
             logger.info(`Successfully toggled like for post. PostID: ${postID}, UserID: ${userID}`, { layer: "controller" });
-            return res.status(200).json({ success: true, message: response ? "Post liked" : "Post unliked", data: null });
+            return res.status(200).json({
+                success: true,
+                message: response.isLiked ? "Post liked" : "Post unliked",
+                data: { likesCount: response.likesCount, isLiked: response.isLiked },
+            });
         } catch (error) {
             logger.error(`Error in toggleLike: ${error}`, { error, layer: "controller" });
             next(error);
@@ -191,12 +195,53 @@ class PostController {
             let response = await this.postsService.addComments(postID, userID, comment);
 
             logger.info(`Successfully added comment to post. PostID: ${postID}, UserID: ${userID}`, { layer: "controller" });
-            return res.status(201).json({ success: true, message: "Comment added", data: { comment: response } });
+            return res.status(201).json({
+                success: true,
+                message: "Comment added",
+                data: {
+                    comment: response.comment,
+                    commentsCount: response.commentsCount,
+                    isCommented: response.isCommented,
+                },
+            });
         } catch (error) {
             logger.error(`Error in addComments: ${error}`, { error, layer: "controller" });
             next(error);
         } finally {
             logger.debug(`Exiting addComments method. Params: postID=${req.params.postID}, userID=${req?.user?.aud}`, { method: "addComments", layer: "controller" });
+        }
+    }
+
+    /* Delete a comment from a post */
+    async deleteComment(req: Request, res: Response, next: NextFunction) {
+        logger.debug(`Entering deleteComment method. Params: postID=${req.params.postID}, commentID=${req.params.commentID}`, { method: "deleteComment", layer: "controller" });
+        try {
+            const userID = req?.user?.aud;
+            const postID = req.params.postID;
+            const commentID = Number(req.params.commentID);
+
+            if (!postID) {
+                throw createHttpError(400, "No post ID provided");
+            }
+            if (!Number.isInteger(commentID) || commentID <= 0) {
+                throw createHttpError(400, "Invalid comment ID");
+            }
+
+            const response = await this.postsService.deleteComment(postID, commentID, userID);
+
+            return res.status(200).json({
+                success: true,
+                message: "Comment deleted",
+                data: {
+                    commentsCount: response.commentsCount,
+                    isCommented: response.isCommented,
+                },
+            });
+        } catch (error) {
+            logger.error(`Error in deleteComment: ${error}`, { error, layer: "controller" });
+            next(error);
+        } finally {
+            logger.debug(`Exiting deleteComment method. Params: postID=${req.params.postID}`, { method: "deleteComment", layer: "controller" });
         }
     }
 
@@ -299,26 +344,38 @@ class PostController {
         }
     }
 
-    /* Search for posts by content */
-    async searchPosts(req: Request, res: Response, next: NextFunction) {
-        logger.debug(`Entering searchPosts method. Param: query=${req.query.query}`, { method: "searchPosts", layer: "controller" });
+    /* Search for posts or users */
+    async search(req: Request, res: Response, next: NextFunction) {
+        logger.debug(`Entering search method. Params: query=${req.query.query}, type=${req.query.type}`, { method: "search", layer: "controller" });
         try {
-            const query = req.query.query as string;
+            const query = String(req.query.query ?? "").trim();
             if (!query) {
                 logger.error(`No search query provided.`, { layer: "controller" });
                 throw createHttpError(400, "Enter something to search");
             }
 
-            logger.info(`Searching for posts containing query: ${query}`, { layer: "controller" });
-            const posts = await this.postsService.searchPosts(query);
+            const type = String(req.query.type ?? "user").toLowerCase();
+            if (type !== "user" && type !== "post") {
+                throw createHttpError(400, "Invalid search type. Use 'user' or 'post'.");
+            }
 
-            logger.info(`Successfully fetched posts for query: ${query}`, { layer: "controller" });
-            return res.status(200).json({ success: true, message: null, data: { posts } });
+            if (type === "post") {
+                logger.info(`Searching for posts containing query: ${query}`, { layer: "controller" });
+                const posts = await this.postsService.searchPosts(query);
+                logger.info(`Successfully fetched posts for query: ${query}`, { layer: "controller" });
+                return res.status(200).json({ success: true, message: null, data: { posts } });
+            }
+
+            const currentUserID = req.user?.aud as string | undefined;
+            logger.info(`Searching for users matching query: ${query}`, { layer: "controller" });
+            const users = await this.postsService.searchUsers(query, currentUserID);
+            logger.info(`Successfully fetched users for query: ${query}`, { layer: "controller" });
+            return res.status(200).json({ success: true, message: null, data: { users } });
         } catch (error) {
-            logger.error(`Error in searchPosts: ${error}`, { error, layer: "controller" });
+            logger.error(`Error in search: ${error}`, { error, layer: "controller" });
             next(error);
         } finally {
-            logger.debug(`Exiting searchPosts method. Param: query=${req.query.query}`, { method: "searchPosts", layer: "controller" });
+            logger.debug(`Exiting search method. Params: query=${req.query.query}, type=${req.query.type}`, { method: "search", layer: "controller" });
         }
     }
 

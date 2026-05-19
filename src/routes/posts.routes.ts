@@ -49,6 +49,11 @@ postsRouter.post("/:postID/comment",  validateAccessToken, (req: Request, res: R
     postsController.addComments(req, res, next);
 })
 
+/* delete comment from a post */
+postsRouter.delete("/:postID/comment/:commentID", validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+    postsController.deleteComment(req, res, next);
+})
+
 /* get all comments for a post */
 postsRouter.get("/:postID/comment",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
     postsController.getComments(req, res, next);
@@ -64,9 +69,9 @@ postsRouter.get("/interaction/:postID",  validateAccessToken, (req: Request, res
     postsController.getInteractionCount(req, res, next);
 });
 
-/* search for posts */
-postsRouter.post("/search", validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
-    postsController.searchPosts(req, res, next);
+/* search for posts or users */
+postsRouter.get("/search", validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+    postsController.search(req, res, next);
 })
 
 /* fetch timeline(all things he posted) */

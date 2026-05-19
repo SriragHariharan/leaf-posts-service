@@ -2,8 +2,6 @@ import { publish } from "./publish";
 
 const TOPICS: Record<string, string> = {
   post_created: "notification.post.created",
-  post_liked: "post.liked",
-  post_commented: "post.commented",
 };
 
 async function sendPostRelatedNotification(

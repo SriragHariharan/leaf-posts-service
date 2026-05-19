@@ -3,6 +3,7 @@ import esClient from "../helpers/elastic-search";
 import { Post } from "../interfaces/post.interface";
 import { IElasticRepository } from "../interfaces/IElasticRepository";
 import { IDeleteElasticRepository } from "../interfaces/IDeleteElasticRepository";
+import { SearchUser } from "../interfaces/user.interface";
 import logger from "../helpers/logger";
 
 class ElasticSearchRepository implements IElasticRepository, IDeleteElasticRepository {
@@ -143,7 +144,74 @@ class ElasticSearchRepository implements IElasticRepository, IDeleteElasticRepos
         }
     }
 
+    /* Search for users by username */
+    async searchUsersContent(query: string): Promise<SearchUser[]> {
+        logger.debug(`Entering searchUsersContent method. Param: query=${query}`, {
+            method: "searchUsersContent",
+            layer: "repository",
+        });
 
+        try {
+            logger.info(`Searching for users matching query: ${query}`, { layer: "repository" });
+
+            const result = await esClient.search({
+                index: "users",
+                body: {
+                    query: {
+                        match_phrase_prefix: {
+                            username: query,
+                        },
+                    },
+                    size: 100,
+                },
+            });
+
+            const hits = result.body?.hits?.hits ?? [];
+
+            logger.info(`Successfully searched for users matching query: ${query}`, {
+                layer: "repository",
+            });
+
+            return hits.map((hit: { _source: SearchUser }) => ({
+                userID: hit._source.userID,
+                username: hit._source.username,
+                profilepic: hit._source.profilepic ?? null,
+            }));
+        } catch (error) {
+            logger.error(`Error in searchUsersContent: Unable to search for query: ${query}`, {
+                error,
+                layer: "repository",
+            });
+            throw createHttpError(500, "Unable to search. Please try again.");
+        } finally {
+            logger.debug(`Exiting searchUsersContent method. Param: query=${query}`, {
+                method: "searchUsersContent",
+                layer: "repository",
+            });
+        }
+    }
+
+    /* Index a user in Elasticsearch */
+    async indexUser(userID: string, username: string, profilepic: string | null): Promise<void> {
+        logger.debug(`Entering indexUser method. Param: userID=${userID}`, { method: "indexUser", layer: "repository" });
+        try {
+            await esClient.index({
+                index: "users",
+                id: userID,
+                body: {
+                    userID,
+                    username,
+                    profilepic,
+                },
+            });
+            logger.info(`Successfully indexed user. userID: ${userID}`, { layer: "repository" });
+        } catch (error) {
+            logger.error(`Error in indexUser: Unable to index user. userID: ${userID}`, { error, layer: "repository" });
+            throw createHttpError(500, "Unable to index user");
+        } finally {
+            logger.debug(`Exiting indexUser method. Param: userID=${userID}`, { method: "indexUser", layer: "repository" });
+        }
+    }
 
     /* Delete a post from Elasticsearch */
     async deletePost(postID: string): Promise<boolean> {

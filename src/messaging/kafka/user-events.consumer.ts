@@ -1,11 +1,12 @@
 import type { EachMessagePayload } from "kafkajs";
-import esClient from "../../helpers/elastic-search";
 import logger from "../../helpers/logger";
 import prisma from "../../helpers/prisma";
+import ElasticSearchRepository from "../../repositories/elastic.repository";
 import kafka from "./kafka";
 
 const TOPIC = "user.events";
 const consumer = kafka.consumer({ groupId: "post-service-user-events" });
+const esRepository = new ElasticSearchRepository();
 
 interface UserEventPayload {
   userID?: string;
@@ -24,29 +25,28 @@ async function upsertUser(userData: UserEventPayload): Promise<boolean> {
     return false;
   }
 
+  const profilepic = userData.profilePicture ?? null;
+
   try {
     await prisma.user.upsert({
       where: { userID: userData.userID },
       update: {
         username: userData.username,
-        profilepic: userData.profilePicture ?? null,
+        profilepic,
       },
       create: {
         userID: userData.userID,
         username: userData.username,
-        profilepic: userData.profilePicture ?? null,
+        profilepic,
       },
     });
 
-    await esClient.index({
-      index: "users",
-      id: userData.userID,
-      body: {
-        userID: userData.userID,
-        username: userData.username,
-        profilepic: userData.profilePicture ?? null,
-      },
-    });
+    try {
+      await esRepository.indexUser(userData.userID, userData.username, profilepic);
+    } catch (esError) {
+      logger.error(`[Kafka] Prisma upsert succeeded but Elasticsearch index failed for userID: ${userData.userID}`, { error: esError });
+      return false;
+    }
 
     logger.info(`[Database] Successfully upserted user with userID: ${userData.userID}`);
     return true;
