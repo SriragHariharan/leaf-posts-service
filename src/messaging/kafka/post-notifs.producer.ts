@@ -13,11 +13,17 @@ async function sendPostRelatedNotification(
   const topic = TOPICS[eventType];
   if (!topic) {
     console.error("Invalid event type:", eventType);
+
     return;
   }
 
   try {
-    await publish(topic, { type: eventType, postID, postOwnerID, interactedUserID });
+    await publish(topic, {
+      type: eventType,
+      postID,
+      postOwnerID,
+      interactedUserID,
+    });
   } catch (error) {
     console.error("Error sending notification:", error);
   }

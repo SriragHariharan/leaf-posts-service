@@ -15,76 +15,137 @@ const postsService = new PostsService(postsRepository, esRepository);
 const postsController = new PostController(postsService);
 
 /* create new post */
-postsRouter.post("/",  validateAccessToken, upload.single("picture"), (req: Request, res: Response, next: NextFunction) => {
-    postsController.createPost(req, res, next)
-});
+postsRouter.post(
+  "/",
+  validateAccessToken,
+  upload.single("picture"),
+  (req: Request, res: Response, next: NextFunction) => {
+    postsController.createPost(req, res, next);
+  },
+);
 
 /* get post details */
-postsRouter.get("/:postID/details", (req: Request, res: Response, next: NextFunction) => {
-  postsController.getPostDetails(req, res, next)  
-})
+postsRouter.get(
+  "/:postID/details",
+  (req: Request, res: Response, next: NextFunction) => {
+    postsController.getPostDetails(req, res, next);
+  },
+);
 
 /* save post */
-postsRouter.post("/save/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
-    postsController.savePost(req, res, next)
-});
+postsRouter.post(
+  "/save/:postID",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
+    postsController.savePost(req, res, next);
+  },
+);
 
 /* unsave post */
-postsRouter.delete("/save/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
-    postsController.unsavePost(req, res, next)
-});
+postsRouter.delete(
+  "/save/:postID",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
+    postsController.unsavePost(req, res, next);
+  },
+);
 
 /* view saved posts */
-postsRouter.get("/save",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
-    postsController.getSavedPostsByUser(req, res, next)
-});
+postsRouter.get(
+  "/save",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
+    postsController.getSavedPostsByUser(req, res, next);
+  },
+);
 
 /* like or unlike a post(single route) */
-postsRouter.post("/like/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+postsRouter.post(
+  "/like/:postID",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
     postsController.toggleLike(req, res, next);
-})
+  },
+);
 
 /* add comment to a post */
-postsRouter.post("/:postID/comment",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+postsRouter.post(
+  "/:postID/comment",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
     postsController.addComments(req, res, next);
-})
+  },
+);
 
 /* delete comment from a post */
-postsRouter.delete("/:postID/comment/:commentID", validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+postsRouter.delete(
+  "/:postID/comment/:commentID",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
     postsController.deleteComment(req, res, next);
-})
+  },
+);
 
 /* get all comments for a post */
-postsRouter.get("/:postID/comment",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+postsRouter.get(
+  "/:postID/comment",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
     postsController.getComments(req, res, next);
-})
+  },
+);
 
 /* report a post */
-postsRouter.post("/report/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+postsRouter.post(
+  "/report/:postID",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
     postsController.reportPost(req, res, next);
-})
+  },
+);
 
 /* get interaction count */
-postsRouter.get("/interaction/:postID",  validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+postsRouter.get(
+  "/interaction/:postID",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
     postsController.getInteractionCount(req, res, next);
-});
+  },
+);
 
 /* search for posts or users */
-postsRouter.get("/search", validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+postsRouter.get(
+  "/search",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
     postsController.search(req, res, next);
-})
+  },
+);
 
 /* fetch timeline(all things he posted) */
-postsRouter.get("/timeline/:userID", validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+postsRouter.get(
+  "/timeline/:userID",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
     postsController.fetchTimeline(req, res, next);
-});
+  },
+);
 
-postsRouter.patch("/:postID", validateAccessToken, upload.single("picture"), (req: Request, res: Response, next: NextFunction) => {
+postsRouter.patch(
+  "/:postID",
+  validateAccessToken,
+  upload.single("picture"),
+  (req: Request, res: Response, next: NextFunction) => {
     postsController.updatePost(req, res, next);
-});
+  },
+);
 
-postsRouter.delete("/:postID/delete", validateAccessToken, (req: Request, res: Response, next: NextFunction) => {
+postsRouter.delete(
+  "/:postID/delete",
+  validateAccessToken,
+  (req: Request, res: Response, next: NextFunction) => {
     postsController.deletePost(req, res, next);
-}) 
+  },
+);
 
 export default postsRouter;

@@ -4,530 +4,433 @@ import { IPostsRepository } from "../interfaces/IPostsRepository";
 import { Post, ReportReason } from "../interfaces/post.interface";
 import { PostComment } from "../interfaces/comment.interface";
 import {
-    AddCommentResult,
-    DeleteCommentResult,
-    ToggleLikeResult,
+  AddCommentResult,
+  DeleteCommentResult,
+  ToggleLikeResult,
 } from "../interfaces/interaction.interface";
-import logger from "../helpers/logger";
-
 class PostsRepository implements IPostsRepository {
-
-    /* Save a new post to MySQL */
-    async createNewPost(userID: string, content: string): Promise<Post | any> {
-        logger.debug(`Entering createNewPost method. Params: userID=${userID}`, { method: "createNewPost", layer: "repository" });
-        try {
-            logger.info(`Creating new post for userID: ${userID}`, { layer: "repository" });
-
-            const newPost = await prisma.post.create({
-                data: {
-                    userID,
-                    content,
-                },
-            });
-
-            logger.info(`Successfully created new post. PostID: ${newPost.id}`, { layer: "repository" });
-            return newPost;
-        } catch (error) {
-            logger.error(`Error in createNewPost: Unable to create post for userID: ${userID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to create post");
-        } finally {
-            logger.debug(`Exiting createNewPost method. Params: userID=${userID}`, { method: "createNewPost", layer: "repository" });
-        }
+  /* Save a new post to MySQL */
+  async createNewPost(userID: string, content: string): Promise<Post | any> {
+    try {
+      const newPost = await prisma.post.create({
+        data: {
+          userID,
+          content,
+        },
+      });
+      return newPost;
+    } catch (error) {
+      throw createHttpError(500, "Unable to create post");
     }
+  }
 
-    /* Delete a post by marking it as deleted */
-    async deletePost(postID: string): Promise<boolean> {
-        logger.debug(`Entering deletePost method. Param: postID=${postID}`, { method: "deletePost", layer: "repository" });
-        try {
-            logger.info(`Soft deleting post. PostID: ${postID}`, { layer: "repository" });
-
-            await prisma.post.update({
-                where: { id: postID },
-                data: { isDeleted: true },
-            });
-
-            logger.info(`Successfully soft deleted post. PostID: ${postID}`, { layer: "repository" });
-            return true;
-        } catch (error) {
-            logger.error(`Error in deletePost: Unable to delete post. PostID: ${postID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to delete post.");
-        } finally {
-            logger.debug(`Exiting deletePost method. Param: postID=${postID}`, { method: "deletePost", layer: "repository" });
-        }
+  /* Delete a post by marking it as deleted */
+  async deletePost(postID: string): Promise<boolean> {
+    try {
+      await prisma.post.update({
+        where: { id: postID },
+        data: { isDeleted: true },
+      });
+      return true;
+    } catch (error) {
+      throw createHttpError(500, "Unable to delete post.");
     }
+  }
 
-    /* Update post content */
-    async updatePost(postID: string, content: string): Promise<boolean> {
-        logger.debug(`Entering updatePost method. Params: postID=${postID}`, { method: "updatePost", layer: "repository" });
-        try {
-            await prisma.post.update({
-                where: { id: postID },
-                data: { content },
-            });
-            return true;
-        } catch (error) {
-            logger.error(`Error in updatePost: Unable to update post. PostID: ${postID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to update post");
-        } finally {
-            logger.debug(`Exiting updatePost method. Params: postID=${postID}`, { method: "updatePost", layer: "repository" });
-        }
+  /* Update post content */
+  async updatePost(postID: string, content: string): Promise<boolean> {
+    try {
+      await prisma.post.update({
+        where: { id: postID },
+        data: { content },
+      });
+
+      return true;
+    } catch (error) {
+      throw createHttpError(500, "Unable to update post");
     }
+  }
 
-    /* Update the image URL of a post */
-    async updateImageURL(postID: string, imageURL: string): Promise<boolean> {
-        logger.debug(`Entering updateImageURL method. Params: postID=${postID}, imageURL=${imageURL}`, { method: "updateImageURL", layer: "repository" });
-        try {
-            logger.info(`Updating image URL for post. PostID: ${postID}`, { layer: "repository" });
-
-            await prisma.post.update({
-                where: {
-                    id: postID,
-                },
-                data: {
-                    imageURL: imageURL,
-                },
-            });
-
-            logger.info(`Successfully updated image URL for post. PostID: ${postID}`, { layer: "repository" });
-            return true;
-        } catch (error) {
-            logger.error(`Error in updateImageURL: Unable to update image URL for post. PostID: ${postID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to update image URL");
-        } finally {
-            logger.debug(`Exiting updateImageURL method. Params: postID=${postID}, imageURL=${imageURL}`, { method: "updateImageURL", layer: "repository" });
-        }
+  /* Update the image URL of a post */
+  async updateImageURL(postID: string, imageURL: string): Promise<boolean> {
+    try {
+      await prisma.post.update({
+        where: {
+          id: postID,
+        },
+        data: {
+          imageURL: imageURL,
+        },
+      });
+      return true;
+    } catch (error) {
+      throw createHttpError(500, "Unable to update image URL");
     }
+  }
 
-    /* Get details of a specific post */
-    async getPostDetails(postID: string): Promise<Post> {
-        logger.debug(`Entering getPostDetails method. Param: postID=${postID}`, { method: "getPostDetails", layer: "repository" });
-        try {
-            logger.info(`Fetching details for post. PostID: ${postID}`, { layer: "repository" });
+  /* Get details of a specific post */
+  async getPostDetails(postID: string): Promise<Post> {
+    try {
+      const post = await prisma.post.findUnique({
+        where: {
+          id: postID,
+        },
+        select: {
+          id: true,
+          imageURL: true,
+          content: true,
+          createdAt: true,
+          likesCount: true,
+          commentsCount: true,
+          user: {
+            select: {
+              userID: true,
+              username: true,
+              profilepic: true,
+            },
+          },
+        },
+      });
 
-            const post = await prisma.post.findUnique({
-                where: {
-                    id: postID,
-                },
-                select: {
-                    id: true,
-                    imageURL: true,
-                    content: true,
-                    createdAt: true,
-                    likesCount: true,
-                    commentsCount: true,
-                    user: {
-                        select: {
-                            userID: true,
-                            username: true,
-                            profilepic: true,
-                        },
-                    },
-                },
-            });
-
-            if (!post) {
-                logger.error(`Post not found. PostID: ${postID}`, { layer: "repository" });
-                throw createHttpError(404, "Post not found");
-            }
-
-            logger.info(`Successfully fetched details for post. PostID: ${postID}`, { layer: "repository" });
-            return post;
-        } catch (error) {
-            if (error instanceof createHttpError.HttpError) {
-                logger.error(`HttpError in getPostDetails: ${error.message}`, { error, layer: "repository" });
-                throw error;
-            }
-            logger.error(`Error in getPostDetails: Unable to fetch details for post. PostID: ${postID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to save post");
-        } finally {
-            logger.debug(`Exiting getPostDetails method. Param: postID=${postID}`, { method: "getPostDetails", layer: "repository" });
-        }
+      if (!post) {
+        throw createHttpError(404, "Post not found");
+      }
+      return post;
+    } catch (error) {
+      if (error instanceof createHttpError.HttpError) {
+        throw error;
+      }
+      throw createHttpError(500, "Unable to save post");
     }
+  }
 
-    /* Save a post for a user */
-    async savePost(postID: string, userID: string): Promise<{ id: number; userID: string; createdAt: Date; postID: string; }> {
-        logger.debug(`Entering savePost method. Params: postID=${postID}, userID=${userID}`, { method: "savePost", layer: "repository" });
-        try {
-            logger.info(`Saving post for user. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
+  /* Save a post for a user */
+  async savePost(
+    postID: string,
+    userID: string,
+  ): Promise<{ id: number; userID: string; createdAt: Date; postID: string }> {
+    try {
+      const existingSave = await prisma.postSave.findFirst({
+        where: {
+          postID,
+          userID,
+        },
+      });
 
-            const existingSave = await prisma.postSave.findFirst({
-                where: {
-                    postID,
-                    userID,
-                },
-            });
+      if (existingSave) {
+        throw createHttpError(400, "Post already saved");
+      }
 
-            if (existingSave) {
-                logger.error(`Post already saved. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-                throw createHttpError(400, "Post already saved");
-            }
-
-            const savedPost = await prisma.postSave.create({
-                data: {
-                    postID,
-                    userID,
-                },
-            });
-
-            logger.info(`Successfully saved post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-            return savedPost;
-        } catch (error) {
-            if (error instanceof createHttpError.HttpError) {
-                logger.error(`HttpError in savePost: ${error.message}`, { error, layer: "repository" });
-                throw error;
-            }
-            logger.error(`Error in savePost: Unable to save post. PostID: ${postID}, UserID: ${userID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to save post");
-        } finally {
-            logger.debug(`Exiting savePost method. Params: postID=${postID}, userID=${userID}`, { method: "savePost", layer: "repository" });
-        }
+      const savedPost = await prisma.postSave.create({
+        data: {
+          postID,
+          userID,
+        },
+      });
+      return savedPost;
+    } catch (error) {
+      if (error instanceof createHttpError.HttpError) {
+        throw error;
+      }
+      throw createHttpError(500, "Unable to save post");
     }
+  }
 
-    /* Unsave a post for a user */
-    async unsavePost(postID: string, userID: string): Promise<boolean> {
-        logger.debug(`Entering unsavePost method. Params: postID=${postID}, userID=${userID}`, { method: "unsavePost", layer: "repository" });
-        try {
-            logger.info(`Unsaving post for user. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
+  /* Unsave a post for a user */
+  async unsavePost(postID: string, userID: string): Promise<boolean> {
+    try {
+      const deleteResult = await prisma.postSave.deleteMany({
+        where: {
+          postID,
+          userID,
+        },
+      });
 
-            const deleteResult = await prisma.postSave.deleteMany({
-                where: {
-                    postID,
-                    userID,
-                },
-            });
-
-            if (deleteResult.count === 0) {
-                logger.error(`Post not found or already unsaved. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-                throw createHttpError(404, "Post not found or already unsaved");
-            }
-
-            logger.info(`Successfully unsaved post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-            return true;
-        } catch (error) {
-            if (error instanceof createHttpError.HttpError) {
-                logger.error(`HttpError in unsavePost: ${error.message}`, { error, layer: "repository" });
-                throw error;
-            }
-            logger.error(`Error in unsavePost: Unable to unsave post. PostID: ${postID}, UserID: ${userID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to save post");
-        } finally {
-            logger.debug(`Exiting unsavePost method. Params: postID=${postID}, userID=${userID}`, { method: "unsavePost", layer: "repository" });
-        }
+      if (deleteResult.count === 0) {
+        throw createHttpError(404, "Post not found or already unsaved");
+      }
+      return true;
+    } catch (error) {
+      if (error instanceof createHttpError.HttpError) {
+        throw error;
+      }
+      throw createHttpError(500, "Unable to save post");
     }
+  }
 
-    /* Get all saved posts for a specific user */
-    async getSavedPostsByUser(userID: string): Promise<Promise<{ post: Post | any }[]>> {
-        logger.debug(`Entering getSavedPostsByUser method. Param: userID=${userID}`, { method: "getSavedPostsByUser", layer: "repository" });
-        try {
-            logger.info(`Fetching saved posts for user. UserID: ${userID}`, { layer: "repository" });
-
-            const savedPosts = await prisma.postSave.findMany({
-                where: {
-                    userID,
-                },
-                include: {
-                    post: true,
-                    user: true,
-                },
-            });
-
-            logger.info(`Successfully fetched saved posts for user. UserID: ${userID}`, { layer: "repository" });
-            return savedPosts;
-        } catch (error) {
-            logger.error(`Error in getSavedPostsByUser: Unable to retrieve saved posts for user. UserID: ${userID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to retrieve saved posts");
-        } finally {
-            logger.debug(`Exiting getSavedPostsByUser method. Param: userID=${userID}`, { method: "getSavedPostsByUser", layer: "repository" });
-        }
+  /* Get all saved posts for a specific user */
+  async getSavedPostsByUser(
+    userID: string,
+  ): Promise<Promise<{ post: Post | any }[]>> {
+    try {
+      const savedPosts = await prisma.postSave.findMany({
+        where: {
+          userID,
+        },
+        include: {
+          post: true,
+          user: true,
+        },
+      });
+      return savedPosts;
+    } catch (error) {
+      throw createHttpError(500, "Unable to retrieve saved posts");
     }
+  }
 
-    /* Toggle like/unlike for a post */
-    async toggleLike(postID: string, userID: string): Promise<ToggleLikeResult> {
-        logger.debug(`Entering toggleLike method. Params: postID=${postID}, userID=${userID}`, { method: "toggleLike", layer: "repository" });
-        try {
-            logger.info(`Toggling like for post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
+  /* Toggle like/unlike for a post */
+  async toggleLike(postID: string, userID: string): Promise<ToggleLikeResult> {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const post = await tx.post.findUnique({
+          where: { id: postID },
+          select: { id: true },
+        });
 
-            return await prisma.$transaction(async (tx) => {
-                const post = await tx.post.findUnique({
-                    where: { id: postID },
-                    select: { id: true },
-                });
-                if (!post) {
-                    throw createHttpError(404, "Post not found");
-                }
-
-                const existingLike = await tx.postLike.findFirst({
-                    where: { postID, userID },
-                });
-
-                let isLiked: boolean;
-                if (existingLike) {
-                    await tx.postLike.delete({
-                        where: { id: existingLike.id },
-                    });
-
-                    await tx.post.update({
-                        where: { id: postID },
-                        data: { likesCount: { decrement: 1 } },
-                    });
-
-                    isLiked = false;
-                    logger.info(`Successfully unliked post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-                } else {
-                    await tx.postLike.create({
-                        data: { postID, userID },
-                    });
-
-                    await tx.post.update({
-                        where: { id: postID },
-                        data: { likesCount: { increment: 1 } },
-                    });
-
-                    isLiked = true;
-                    logger.info(`Successfully liked post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-                }
-
-                const updatedPost = await tx.post.findUnique({
-                    where: { id: postID },
-                    select: { likesCount: true },
-                });
-
-                return {
-                    isLiked,
-                    likesCount: updatedPost?.likesCount ?? 0,
-                };
-            });
-        } catch (error) {
-            if (createHttpError.isHttpError(error)) {
-                throw error;
-            }
-            logger.error(`Error in toggleLike: Unable to toggle like for post. PostID: ${postID}, UserID: ${userID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Something went wrong");
-        } finally {
-            logger.debug(`Exiting toggleLike method. Params: postID=${postID}, userID=${userID}`, { method: "toggleLike", layer: "repository" });
+        if (!post) {
+          throw createHttpError(404, "Post not found");
         }
-    }
 
-    /* Add a comment to a post */
-    async addComments(postID: string, userID: string, comment: string): Promise<AddCommentResult> {
-        logger.debug(`Entering addComments method. Params: postID=${postID}, userID=${userID}`, { method: "addComments", layer: "repository" });
-        try {
-            logger.info(`Adding comment to post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
+        const existingLike = await tx.postLike.findFirst({
+          where: { postID, userID },
+        });
 
-            return await prisma.$transaction(async (tx) => {
-                const post = await tx.post.findUnique({
-                    where: { id: postID },
-                    select: { id: true },
-                });
-                if (!post) {
-                    throw createHttpError(404, "Post not found");
-                }
+        let isLiked: boolean;
 
-                const newComment = await tx.postComment.create({
-                    data: {
-                        postID,
-                        userID,
-                        comment,
-                        status: "active",
-                    },
-                    include: {
-                        user: {
-                            select: {
-                                userID: true,
-                                username: true,
-                                profilepic: true,
-                            },
-                        },
-                    },
-                });
+        if (existingLike) {
+          await tx.postLike.delete({
+            where: { id: existingLike.id },
+          });
 
-                await tx.post.update({
-                    where: { id: postID },
-                    data: { commentsCount: { increment: 1 } },
-                });
+          await tx.post.update({
+            where: { id: postID },
+            data: { likesCount: { decrement: 1 } },
+          });
 
-                const updatedPost = await tx.post.findUnique({
-                    where: { id: postID },
-                    select: { commentsCount: true },
-                });
+          isLiked = false;
+        } else {
+          await tx.postLike.create({
+            data: { postID, userID },
+          });
 
-                logger.info(`Successfully added comment to post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-                return {
-                    comment: newComment,
-                    commentsCount: updatedPost?.commentsCount ?? 0,
-                    isCommented: true,
-                };
-            });
-        } catch (error) {
-            if (createHttpError.isHttpError(error)) {
-                throw error;
-            }
-            logger.error(`Error in addComments: Unable to comment on post. PostID: ${postID}, UserID: ${userID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to comment on post");
-        } finally {
-            logger.debug(`Exiting addComments method. Params: postID=${postID}, userID=${userID}`, { method: "addComments", layer: "repository" });
+          await tx.post.update({
+            where: { id: postID },
+            data: { likesCount: { increment: 1 } },
+          });
+
+          isLiked = true;
         }
+
+        const updatedPost = await tx.post.findUnique({
+          where: { id: postID },
+          select: { likesCount: true },
+        });
+
+        return {
+          isLiked,
+          likesCount: updatedPost?.likesCount ?? 0,
+        };
+      });
+    } catch (error) {
+      if (createHttpError.isHttpError(error)) {
+        throw error;
+      }
+      throw createHttpError(500, "Something went wrong");
     }
+  }
 
-    /* Soft-delete a comment authored by the user */
-    async deleteComment(postID: string, commentID: number, userID: string): Promise<DeleteCommentResult> {
-        logger.debug(`Entering deleteComment method. Params: postID=${postID}, commentID=${commentID}, userID=${userID}`, { method: "deleteComment", layer: "repository" });
-        try {
-            return await prisma.$transaction(async (tx) => {
-                const existingComment = await tx.postComment.findFirst({
-                    where: { id: commentID, postID, status: "active" },
-                });
+  /* Add a comment to a post */
+  async addComments(
+    postID: string,
+    userID: string,
+    comment: string,
+  ): Promise<AddCommentResult> {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const post = await tx.post.findUnique({
+          where: { id: postID },
+          select: { id: true },
+        });
 
-                if (!existingComment) {
-                    throw createHttpError(404, "Comment not found");
-                }
-                if (existingComment.userID !== userID) {
-                    throw createHttpError(403, "Not allowed to delete this comment");
-                }
-
-                await tx.postComment.update({
-                    where: { id: commentID },
-                    data: { status: "deleted" },
-                });
-
-                await tx.post.update({
-                    where: { id: postID },
-                    data: { commentsCount: { decrement: 1 } },
-                });
-
-                const remainingComments = await tx.postComment.count({
-                    where: { postID, userID, status: "active" },
-                });
-
-                const updatedPost = await tx.post.findUnique({
-                    where: { id: postID },
-                    select: { commentsCount: true },
-                });
-
-                return {
-                    commentsCount: updatedPost?.commentsCount ?? 0,
-                    isCommented: remainingComments > 0,
-                };
-            });
-        } catch (error) {
-            if (createHttpError.isHttpError(error)) {
-                throw error;
-            }
-            logger.error(`Error in deleteComment: PostID: ${postID}, commentID: ${commentID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to delete comment");
-        } finally {
-            logger.debug(`Exiting deleteComment method. Params: postID=${postID}, commentID=${commentID}`, { method: "deleteComment", layer: "repository" });
+        if (!post) {
+          throw createHttpError(404, "Post not found");
         }
+
+        const newComment = await tx.postComment.create({
+          data: {
+            postID,
+            userID,
+            comment,
+            status: "active",
+          },
+          include: {
+            user: {
+              select: {
+                userID: true,
+                username: true,
+                profilepic: true,
+              },
+            },
+          },
+        });
+
+        await tx.post.update({
+          where: { id: postID },
+          data: { commentsCount: { increment: 1 } },
+        });
+
+        const updatedPost = await tx.post.findUnique({
+          where: { id: postID },
+          select: { commentsCount: true },
+        });
+        return {
+          comment: newComment,
+          commentsCount: updatedPost?.commentsCount ?? 0,
+          isCommented: true,
+        };
+      });
+    } catch (error) {
+      if (createHttpError.isHttpError(error)) {
+        throw error;
+      }
+      throw createHttpError(500, "Unable to comment on post");
     }
+  }
 
-    /* Get all comments for a post */
-    async getComments(postID: string): Promise<PostComment[]> {
-        logger.debug(`Entering getComments method. Param: postID=${postID}`, { method: "getComments", layer: "repository" });
-        try {
-            logger.info(`Fetching comments for post. PostID: ${postID}`, { layer: "repository" });
+  /* Soft-delete a comment authored by the user */
+  async deleteComment(
+    postID: string,
+    commentID: number,
+    userID: string,
+  ): Promise<DeleteCommentResult> {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const existingComment = await tx.postComment.findFirst({
+          where: { id: commentID, postID, status: "active" },
+        });
 
-            const comments = await prisma.postComment.findMany({
-                where: {
-                    postID,
-                    status: "active",
-                },
-                include: {
-                    user: true,
-                },
-                orderBy: {
-                    createdAt: 'desc',
-                },
-            });
-
-            logger.info(`Successfully fetched comments for post. PostID: ${postID}`, { layer: "repository" });
-            return comments;
-        } catch (error) {
-            logger.error(`Error in getComments: Unable to fetch comments for post. PostID: ${postID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to fetch comments");
-        } finally {
-            logger.debug(`Exiting getComments method. Param: postID=${postID}`, { method: "getComments", layer: "repository" });
+        if (!existingComment) {
+          throw createHttpError(404, "Comment not found");
         }
-    }
-
-    /* Report a post */
-    async reportPost(postID: string, userID: string, reason: ReportReason, description: string): Promise<boolean> {
-        logger.debug(`Entering reportPost method. Params: postID=${postID}, userID=${userID}`, { method: "reportPost", layer: "repository" });
-        try {
-            logger.info(`Reporting post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-
-            await prisma.postReport.create({
-                data: {
-                    postID,
-                    userID,
-                    reason,
-                    description,
-                    status: "pending",
-                },
-            });
-
-            logger.info(`Successfully reported post. PostID: ${postID}, UserID: ${userID}`, { layer: "repository" });
-            return true;
-        } catch (error) {
-            logger.error(`Error in reportPost: Unable to report post. PostID: ${postID}, UserID: ${userID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to report post");
-        } finally {
-            logger.debug(`Exiting reportPost method. Params: postID=${postID}, userID=${userID}`, { method: "reportPost", layer: "repository" });
+        if (existingComment.userID !== userID) {
+          throw createHttpError(403, "Not allowed to delete this comment");
         }
+
+        await tx.postComment.update({
+          where: { id: commentID },
+          data: { status: "deleted" },
+        });
+
+        await tx.post.update({
+          where: { id: postID },
+          data: { commentsCount: { decrement: 1 } },
+        });
+
+        const remainingComments = await tx.postComment.count({
+          where: { postID, userID, status: "active" },
+        });
+
+        const updatedPost = await tx.post.findUnique({
+          where: { id: postID },
+          select: { commentsCount: true },
+        });
+
+        return {
+          commentsCount: updatedPost?.commentsCount ?? 0,
+          isCommented: remainingComments > 0,
+        };
+      });
+    } catch (error) {
+      if (createHttpError.isHttpError(error)) {
+        throw error;
+      }
+      throw createHttpError(500, "Unable to delete comment");
     }
+  }
 
-    /* Get interaction count (likes and comments) for a post */
-    async getInteractionCount(postID: string): Promise<{ likesCount: number; commentsCount: number; } | null> {
-        logger.debug(`Entering getInteractionCount method. Param: postID=${postID}`, { method: "getInteractionCount", layer: "repository" });
-        try {
-            logger.info(`Fetching interaction count for post. PostID: ${postID}`, { layer: "repository" });
-
-            const interactions = await prisma.post.findUnique({
-                where: { id: postID },
-                select: {
-                    likesCount: true,
-                    commentsCount: true,
-                },
-            });
-
-            logger.info(`Successfully fetched interaction count for post. PostID: ${postID}`, { layer: "repository" });
-            return interactions;
-        } catch (error) {
-            logger.error(`Error in getInteractionCount: Unable to fetch interaction count for post. PostID: ${postID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to fetch interaction count");
-        } finally {
-            logger.debug(`Exiting getInteractionCount method. Param: postID=${postID}`, { method: "getInteractionCount", layer: "repository" });
-        }
+  /* Get all comments for a post */
+  async getComments(postID: string): Promise<PostComment[]> {
+    try {
+      const comments = await prisma.postComment.findMany({
+        where: {
+          postID,
+          status: "active",
+        },
+        include: {
+          user: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+      return comments;
+    } catch (error) {
+      throw createHttpError(500, "Unable to fetch comments");
     }
+  }
 
-    /* Fetch user timeline (all posts by the user) */
-    async fetchTimeline(userID: string, page: number): Promise<Post[]> {
-        logger.debug(`Entering fetchTimeline method. Params: userID=${userID}, page=${page}`, { method: "fetchTimeline", layer: "repository" });
-        try {
-            logger.info(`Fetching timeline for user. UserID: ${userID}, Page: ${page}`, { layer: "repository" });
-
-            const posts = await prisma.post.findMany({
-                where: { userID },
-                include: {
-                    user: true,
-                    likes: true,
-                    comments: true,
-                    saves: true,
-                    reports: true,
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 3,
-                skip: (page - 1) * 3,
-            });
-
-            logger.info(`Successfully fetched timeline for user. UserID: ${userID}, Page: ${page}`, { layer: "repository" });
-            return posts;
-        } catch (error) {
-            logger.error(`Error in fetchTimeline: Unable to fetch timeline for user. UserID: ${userID}`, { error, layer: "repository" });
-            throw createHttpError(500, "Unable to fetch timeline");
-        } finally {
-            logger.debug(`Exiting fetchTimeline method. Params: userID=${userID}, page=${page}`, { method: "fetchTimeline", layer: "repository" });
-        }
+  /* Report a post */
+  async reportPost(
+    postID: string,
+    userID: string,
+    reason: ReportReason,
+    description: string,
+  ): Promise<boolean> {
+    try {
+      await prisma.postReport.create({
+        data: {
+          postID,
+          userID,
+          reason,
+          description,
+          status: "pending",
+        },
+      });
+      return true;
+    } catch (error) {
+      throw createHttpError(500, "Unable to report post");
     }
+  }
+
+  /* Get interaction count (likes and comments) for a post */
+  async getInteractionCount(
+    postID: string,
+  ): Promise<{ likesCount: number; commentsCount: number } | null> {
+    try {
+      const interactions = await prisma.post.findUnique({
+        where: { id: postID },
+        select: {
+          likesCount: true,
+          commentsCount: true,
+        },
+      });
+      return interactions;
+    } catch (error) {
+      throw createHttpError(500, "Unable to fetch interaction count");
+    }
+  }
+
+  /* Fetch user timeline (all posts by the user) */
+  async fetchTimeline(userID: string, page: number): Promise<Post[]> {
+    try {
+      const posts = await prisma.post.findMany({
+        where: { userID },
+        include: {
+          user: true,
+          likes: true,
+          comments: true,
+          saves: true,
+          reports: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 3,
+        skip: (page - 1) * 3,
+      });
+      return posts;
+    } catch (error) {
+      throw createHttpError(500, "Unable to fetch timeline");
+    }
+  }
 }
 
 export default PostsRepository;

@@ -1,3 +1,3 @@
 export interface IDeleteElasticRepository {
-    deletePost(postID: string): Promise<boolean>;
+  deletePost(postID: string): Promise<boolean>;
 }

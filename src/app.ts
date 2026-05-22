@@ -3,17 +3,14 @@ import 'dotenv/config'
 import createHttpError from 'http-errors';
 import bodyParser from 'body-parser';
 
+
 import "./messaging/kafka/user-events.consumer";
 import postsRouter from './routes/posts.routes';
 import adminRouter from './routes/admin.routes';
 
+
 const app = express();
 
-/* logger logs handling */
-app.use((_req: Request, _res: Response, next: NextFunction) => {
-//   logger.info(`Incoming request`, { method: req.method, url: req.url });
-  next();
-});
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
@@ -21,9 +18,9 @@ app.use(bodyParser.json())
 app.use("/", postsRouter );
 app.use("/admin", adminRouter );
 
-
 //handle endpoints not found: 404
 app.use(async (_req: Request, _res: Response, next: NextFunction) => {
+
   next(createHttpError.NotFound("Route not found"))
 })
 

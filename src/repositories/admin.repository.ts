@@ -2,316 +2,250 @@ import createHttpError from "http-errors";
 import { IAdminRepository } from "../interfaces/IAdminRepository";
 import { Post, PostReport } from "../interfaces/post.interface";
 import prisma from "../helpers/prisma";
-import logger from "../helpers/logger";
-
 class AdminRepository implements IAdminRepository {
-
-    // Get all reported posts with status "pending"
-    async getReportedPosts(): Promise<PostReport[] | null> {
-        logger.debug(`Entering getReportedPosts method.`, { method: "getReportedPosts", layer: "repository" });
-        try {
-            logger.info(`Fetching reported posts with status "pending".`, { layer: "repository" });
-
-            const reportedPosts = await prisma.postReport.findMany({
-                where: {
-                    status: "pending"
-                },
-                distinct: ["postID"],
-                include: {
-                    post: true,
-                    user: true
-                },
-                orderBy: {
-                    createdAt: "asc"
-                }
-            });
-
-            logger.info(`Successfully fetched reported posts.`, { layer: "repository" });
-            return reportedPosts;
-        } catch (error) {
-            if (error instanceof Error) {
-                logger.error(`Error in getReportedPosts: ${error.message}`, { error, layer: "repository" });
-                throw createHttpError(error.message);
-            } else {
-                logger.error(`Unexpected error in getReportedPosts.`, { error, layer: "repository" });
-                throw createHttpError("Something went wrong");
-            }
-        } finally {
-            logger.debug(`Exiting getReportedPosts method.`, { method: "getReportedPosts", layer: "repository" });
-        }
+  // Get all reported posts with status "pending"
+  async getReportedPosts(): Promise<PostReport[] | null> {
+    try {
+      const reportedPosts = await prisma.postReport.findMany({
+        where: {
+          status: "pending",
+        },
+        distinct: ["postID"],
+        include: {
+          post: true,
+          user: true,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+      });
+      return reportedPosts;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw createHttpError(error.message);
+      } else {
+        throw createHttpError("Something went wrong");
+      }
     }
+  }
 
-    // Get details of a specific post by postID
-    async getPostDetails(postID: string): Promise<Post | null> {
-        logger.debug(`Entering getPostDetails method. Param: ${postID}`, { method: "getPostDetails", layer: "repository" });
-        try {
-            logger.info(`Fetching post details for postID: ${postID}.`, { layer: "repository" });
-
-            const postDetails = await prisma.post.findUnique({
-                where: {
-                    id: postID
-                },
-                include: {
-                    user: true
-                }
-            });
-
-            logger.info(`Successfully fetched post details for postID: ${postID}.`, { layer: "repository" });
-            return postDetails;
-        } catch (error) {
-            if (error instanceof Error) {
-                logger.error(`Error in getPostDetails: ${error.message}`, { error, layer: "repository" });
-                throw createHttpError(error.message);
-            } else {
-                logger.error(`Unexpected error in getPostDetails.`, { error, layer: "repository" });
-                throw createHttpError("Something went wrong");
-            }
-        } finally {
-            logger.debug(`Exiting getPostDetails method. Param: ${postID}`, { method: "getPostDetails", layer: "repository" });
-        }
+  // Get details of a specific post by postID
+  async getPostDetails(postID: string): Promise<Post | null> {
+    try {
+      const postDetails = await prisma.post.findUnique({
+        where: {
+          id: postID,
+        },
+        include: {
+          user: true,
+        },
+      });
+      return postDetails;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw createHttpError(error.message);
+      } else {
+        throw createHttpError("Something went wrong");
+      }
     }
+  }
 
-    // Update the status of a post report
-    async updatePostReportStatus(postID: string, status: "pending" | "rejected" | "resolved"): Promise<PostReport | null> {
-        logger.debug(`Entering updatePostReportStatus method. Params: postID=${postID}, status=${status}`, { method: "updatePostReportStatus", layer: "repository" });
-        try {
-            logger.info(`Updating post report status for postID: ${postID} to ${status}.`, { layer: "repository" });
+  // Update the status of a post report
+  async updatePostReportStatus(
+    postID: string,
+    status: "pending" | "rejected" | "resolved",
+  ): Promise<PostReport | null> {
+    try {
+      // First, find the post report by postID
+      const postReport = await prisma.postReport.findFirst({
+        where: {
+          postID: postID,
+        },
+      });
 
-            // First, find the post report by postID
-            const postReport = await prisma.postReport.findFirst({
-                where: {
-                    postID: postID
-                }
-            });
+      // If no report is found, throw an error
+      if (!postReport) {
+        throw createHttpError(404, "Post report not found");
+      }
 
-            // If no report is found, throw an error
-            if (!postReport) {
-                logger.error(`Post report not found for postID: ${postID}.`, { layer: "repository" });
-                throw createHttpError(404, "Post report not found");
-            }
-
-            // Now update the post report using its id
-            const updatedPostReport = await prisma.postReport.update({
-                where: {
-                    id: postReport.id // Use the id of the found post report
-                },
-                data: {
-                    status: status
-                }
-            });
-
-            logger.info(`Successfully updated post report status for postID: ${postID}.`, { layer: "repository" });
-            return updatedPostReport;
-        } catch (error) {
-            if (error instanceof Error) {
-                logger.error(`Error in updatePostReportStatus: ${error.message}`, { error, layer: "repository" });
-                throw createHttpError(error.message);
-            } else {
-                logger.error(`Unexpected error in updatePostReportStatus.`, { error, layer: "repository" });
-                throw createHttpError("Something went wrong");
-            }
-        } finally {
-            logger.debug(`Exiting updatePostReportStatus method. Params: postID=${postID}, status=${status}`, { method: "updatePostReportStatus", layer: "repository" });
-        }
+      // Now update the post report using its id
+      const updatedPostReport = await prisma.postReport.update({
+        where: {
+          id: postReport.id, // Use the id of the found post report
+        },
+        data: {
+          status: status,
+        },
+      });
+      return updatedPostReport;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw createHttpError(error.message);
+      } else {
+        throw createHttpError("Something went wrong");
+      }
     }
+  }
 
-    // Soft delete a post and update its reports to "resolved"
-    async deletePost(postID: string): Promise<boolean> {
-        logger.debug(`Entering deletePost method. Param: ${postID}`, { method: "deletePost", layer: "repository" });
-        try {
-            logger.info(`Soft deleting post with postID: ${postID}.`, { layer: "repository" });
+  // Soft delete a post and update its reports to "resolved"
+  async deletePost(postID: string): Promise<boolean> {
+    try {
+      await prisma.post.update({
+        where: {
+          id: postID,
+        },
+        data: {
+          isDeleted: true,
+        },
+      });
 
-            await prisma.post.update({
-                where: {
-                    id: postID
-                },
-                data: {
-                    isDeleted: true
-                }
-            });
-
-            await prisma.postReport.updateMany({
-                where: {
-                    postID: postID
-                },
-                data: {
-                    status: "resolved"
-                }
-            });
-
-            logger.info(`Successfully soft deleted post with postID: ${postID}.`, { layer: "repository" });
-            return true;
-        } catch (error) {
-            if (error instanceof Error) {
-                logger.error(`Error in deletePost: ${error.message}`, { error, layer: "repository" });
-                throw createHttpError(error.message);
-            } else {
-                logger.error(`Unexpected error in deletePost.`, { error, layer: "repository" });
-                throw createHttpError("Something went wrong");
-            }
-        } finally {
-            logger.debug(`Exiting deletePost method. Param: ${postID}`, { method: "deletePost", layer: "repository" });
-        }
+      await prisma.postReport.updateMany({
+        where: {
+          postID: postID,
+        },
+        data: {
+          status: "resolved",
+        },
+      });
+      return true;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw createHttpError(error.message);
+      } else {
+        throw createHttpError("Something went wrong");
+      }
     }
+  }
 
-    // Get all reports for a specific post by postID
-    async getReportsByPostID(postID: string): Promise<PostReport[] | null> {
-        logger.debug(`Entering getReportsByPostID method. Param: ${postID}`, { method: "getReportsByPostID", layer: "repository" });
-        try {
-            logger.info(`Fetching reports for postID: ${postID}.`, { layer: "repository" });
-
-            const reports = await prisma.postReport.findMany({
-                where: {
-                    postID: postID
-                },
-                include: {
-                    user: true
-                },
-                orderBy: {
-                    createdAt: "desc"
-                }
-            });
-
-            logger.info(`Successfully fetched reports for postID: ${postID}.`, { layer: "repository" });
-            return reports;
-        } catch (error) {
-            if (error instanceof Error) {
-                logger.error(`Error in getReportsByPostID: ${error.message}`, { error, layer: "repository" });
-                throw createHttpError(error.message);
-            } else {
-                logger.error(`Unexpected error in getReportsByPostID.`, { error, layer: "repository" });
-                throw createHttpError("Something went wrong");
-            }
-        } finally {
-            logger.debug(`Exiting getReportsByPostID method. Param: ${postID}`, { method: "getReportsByPostID", layer: "repository" });
-        }
+  // Get all reports for a specific post by postID
+  async getReportsByPostID(postID: string): Promise<PostReport[] | null> {
+    try {
+      const reports = await prisma.postReport.findMany({
+        where: {
+          postID: postID,
+        },
+        include: {
+          user: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+      return reports;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw createHttpError(error.message);
+      } else {
+        throw createHttpError("Something went wrong");
+      }
     }
+  }
 
-    // Update the status of a single report by reportID
-    async updateSingleReportStatus(reportID: string, status: "pending" | "rejected" | "resolved"): Promise<boolean> {
-        logger.debug(`Entering updateSingleReportStatus method. Params: reportID=${reportID}, status=${status}`, { method: "updateSingleReportStatus", layer: "repository" });
-        try {
-            logger.info(`Updating report status for reportID: ${reportID} to ${status}.`, { layer: "repository" });
-
-            await prisma.postReport.update({
-                where: {
-                    id: Number(reportID)
-                },
-                data: {
-                    status: status
-                }
-            });
-
-            logger.info(`Successfully updated report status for reportID: ${reportID}.`, { layer: "repository" });
-            return true;
-        } catch (error) {
-            if (error instanceof Error) {
-                logger.error(`Error in updateSingleReportStatus: ${error.message}`, { error, layer: "repository" });
-                throw createHttpError(error.message);
-            } else {
-                logger.error(`Unexpected error in updateSingleReportStatus.`, { error, layer: "repository" });
-                throw createHttpError("Something went wrong");
-            }
-        } finally {
-            logger.debug(`Exiting updateSingleReportStatus method. Params: reportID=${reportID}, status=${status}`, { method: "updateSingleReportStatus", layer: "repository" });
-        }
+  // Update the status of a single report by reportID
+  async updateSingleReportStatus(
+    reportID: string,
+    status: "pending" | "rejected" | "resolved",
+  ): Promise<boolean> {
+    try {
+      await prisma.postReport.update({
+        where: {
+          id: Number(reportID),
+        },
+        data: {
+          status: status,
+        },
+      });
+      return true;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw createHttpError(error.message);
+      } else {
+        throw createHttpError("Something went wrong");
+      }
     }
+  }
 
-    // Update the status of all reports for a specific post by postID
-    async updateReportStatusByPostID(postID: string, status: "pending" | "rejected" | "resolved"): Promise<boolean> {
-        logger.debug(`Entering updateReportStatusByPostID method. Params: postID=${postID}, status=${status}`, { method: "updateReportStatusByPostID", layer: "repository" });
-        try {
-            logger.info(`Updating report status for all reports of postID: ${postID} to ${status}.`, { layer: "repository" });
-
-            await prisma.postReport.updateMany({
-                where: {
-                    postID: postID
-                },
-                data: {
-                    status: "rejected"
-                }
-            });
-
-            logger.info(`Successfully updated report status for all reports of postID: ${postID}.`, { layer: "repository" });
-            return true;
-        } catch (error) {
-            if (error instanceof Error) {
-                logger.error(`Error in updateReportStatusByPostID: ${error.message}`, { error, layer: "repository" });
-                throw createHttpError(error.message);
-            } else {
-                logger.error(`Unexpected error in updateReportStatusByPostID.`, { error, layer: "repository" });
-                throw createHttpError("Something went wrong");
-            }
-        } finally {
-            logger.debug(`Exiting updateReportStatusByPostID method. Params: postID=${postID}, status=${status}`, { method: "updateReportStatusByPostID", layer: "repository" });
-        }
+  // Update the status of all reports for a specific post by postID
+  async updateReportStatusByPostID(
+    postID: string,
+    status: "pending" | "rejected" | "resolved",
+  ): Promise<boolean> {
+    try {
+      await prisma.postReport.updateMany({
+        where: {
+          postID: postID,
+        },
+        data: {
+          status: "rejected",
+        },
+      });
+      return true;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw createHttpError(error.message);
+      } else {
+        throw createHttpError("Something went wrong");
+      }
     }
+  }
 
-    // Get the total number of posts and posts added this month
-    async getPostsCount(): Promise<{ total: number; thisMonth: number; }> {
-        logger.debug(`Entering getPostsCount method.`, { method: "getPostsCount", layer: "repository" });
-        try {
-            logger.info(`Fetching total posts and posts added this month.`, { layer: "repository" });
+  // Get the total number of posts and posts added this month
+  async getPostsCount(): Promise<{ total: number; thisMonth: number }> {
+    try {
+      const totalPosts = await prisma.post.count();
 
-            const totalPosts = await prisma.post.count();
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            const thisMonthPosts = await prisma.post.count({
-                where: {
-                    createdAt: {
-                        gte: startOfMonth,
-                    },
-                },
-            });
+      const now = new Date();
 
-            logger.info(`Successfully fetched posts count.`, { layer: "repository" });
-            return { total: totalPosts, thisMonth: thisMonthPosts };
-        } catch (error) {
-            logger.error(`Error in getPostsCount: ${error}`, { error, layer: "repository" });
-            throw createHttpError(500, "Something went wrong");
-        } finally {
-            logger.debug(`Exiting getPostsCount method.`, { method: "getPostsCount", layer: "repository" });
-        }
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const thisMonthPosts = await prisma.post.count({
+        where: {
+          createdAt: {
+            gte: startOfMonth,
+          },
+        },
+      });
+      return { total: totalPosts, thisMonth: thisMonthPosts };
+    } catch (error) {
+      throw createHttpError(500, "Something went wrong");
     }
+  }
 
-    // Get today's post reports with status "pending"
-    async getTodaysPostReports(): Promise<PostReport[] | null> {
-        logger.debug(`Entering getTodaysPostReports method.`, { method: "getTodaysPostReports", layer: "repository" });
-        try {
-            logger.info(`Fetching today's post reports with status "pending".`, { layer: "repository" });
+  // Get today's post reports with status "pending"
+  async getTodaysPostReports(): Promise<PostReport[] | null> {
+    try {
+      const now = new Date();
 
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const reports = await prisma.postReport.findMany({
-                where: {
-                    createdAt: {
-                        gte: startOfDay,
-                    },
-                    status: "pending"
-                },
-                include: {
-                    post: true,
-                    user: true
-                },
-                orderBy: {
-                    createdAt: "asc"
-                }
-            });
+      const startOfDay = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+      );
 
-            logger.info(`Successfully fetched today's post reports.`, { layer: "repository" });
-            return reports;
-        } catch (error) {
-            if (error instanceof Error) {
-                logger.error(`Error in getTodaysPostReports: ${error.message}`, { error, layer: "repository" });
-                throw createHttpError(error.message);
-            } else {
-                logger.error(`Unexpected error in getTodaysPostReports.`, { error, layer: "repository" });
-                throw createHttpError("Something went wrong");
-            }
-        } finally {
-            logger.debug(`Exiting getTodaysPostReports method.`, { method: "getTodaysPostReports", layer: "repository" });
-        }
+      const reports = await prisma.postReport.findMany({
+        where: {
+          createdAt: {
+            gte: startOfDay,
+          },
+          status: "pending",
+        },
+        include: {
+          post: true,
+          user: true,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+      });
+      return reports;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw createHttpError(error.message);
+      } else {
+        throw createHttpError("Something went wrong");
+      }
     }
+  }
 }
 
 export default AdminRepository;
