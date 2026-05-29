@@ -6,12 +6,15 @@
   "scripts": {
     "start": "node dist/app.js",
     "dev": "tsx watch src/app.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
   },
   "author": "Srirag H",
   "license": "ISC",
   "dependencies": {
-    "@elastic/elasticsearch": "^7.17.14",
+    "@elastic/elasticsearch": "7.13.0",
     "@prisma/client": "^6.3.0",
     "body-parser": "^1.20.3",
     "cloudinary": "^2.6.0",
