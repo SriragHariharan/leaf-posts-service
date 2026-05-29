@@ -10,7 +10,6 @@ import { SearchUser } from "../interfaces/user.interface";
 import { IElasticRepository } from "../interfaces/IElasticRepository";
 import { IPostService } from "../interfaces/IPostService";
 import { PostComment } from "../interfaces/comment.interface";
-import RedisHelper from "../helpers/redis";
 import {
   sendPostCreatedEvent,
   sendPostDeletedEvent,
