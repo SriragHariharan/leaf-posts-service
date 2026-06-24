@@ -17,6 +17,9 @@ app.use(bodyParser.json())
 
 app.use("/", postsRouter );
 app.use("/admin", adminRouter );
+app.use("/test", (_req: Request, res: Response) => {
+  res.send({ message: "Post service up and running." });
+});
 
 //handle endpoints not found: 404
 app.use(async (_req: Request, _res: Response, next: NextFunction) => {

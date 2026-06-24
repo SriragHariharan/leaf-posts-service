@@ -4,6 +4,8 @@ npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+ca.pem
+
 # Logs
 logs
 *.log
