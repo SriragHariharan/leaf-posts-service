@@ -175,13 +175,14 @@ class ElasticSearchRepository
   /* Delete a post from Elasticsearch */
   async deletePost(postID: string): Promise<boolean> {
     try {
-      const deletedResponse = await esClient.delete({
-        index: "posts",
-        id: postID,
-      });
-      return deletedResponse;
+        await esClient.delete({
+          index: "posts",
+          id: postID,
+        });
+
+        return true;
     } catch (error) {
-      throw createHttpError(500, "Unable to delete post.");
+        throw createHttpError(500, "Unable to delete post.");
     }
   }
 }
